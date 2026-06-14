@@ -90,6 +90,10 @@
   .page-desc{font-size:14px;color:var(--sub);margin-top:6px;margin-bottom:26px}
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:18px;overflow-x:auto}
   .panel-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px}
+  .venue-info{display:flex;flex-direction:column;gap:12px}
+  .venue-line{display:flex;gap:14px;align-items:baseline;font-size:16px}
+  .venue-line .k{flex:0 0 40px;font-weight:700;color:var(--ink)}
+  .venue-line .v{flex:1;min-width:0;color:var(--ink);font-weight:500;word-break:keep-all}
   .maplink{color:var(--mint-ink);font-weight:600;font-size:13.5px;text-decoration:none;white-space:nowrap}
   .maplink:hover{text-decoration:underline}
   .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:4px}
@@ -933,22 +937,28 @@ function renderVenue(){
 
   /* 주소 패널 */
   const panel = el('div','panel');
-  const dl = el('div','facts');
-  dl.appendChild(el('dt','','장소'));
-  if (editing()){ const dd=el('dd'); dd.appendChild(inp(m,'venue')); dl.appendChild(dd); }
-  else dl.appendChild(el('dd','', m.venue));
-  dl.appendChild(el('dt','','주소'));
-  if (editing()){ const dd=el('dd'); dd.appendChild(inp(m,'venueAddr')); dl.appendChild(dd); }
+  const info = el('div','venue-info');
+
+  const line1 = el('div','venue-line');
+  line1.appendChild(el('span','k','장소'));
+  if (editing()){ const v=el('span','v'); v.appendChild(inp(m,'venue')); line1.appendChild(v); }
+  else line1.appendChild(el('span','v', m.venue));
+  info.appendChild(line1);
+
+  const line2 = el('div','venue-line');
+  line2.appendChild(el('span','k','주소'));
+  if (editing()){ const v=el('span','v'); v.appendChild(inp(m,'venueAddr')); line2.appendChild(v); }
   else {
-    const dd = el('dd');
-    dd.appendChild(document.createTextNode((m.venueAddr||'') + '  '));
+    const v = el('span','v');
+    v.appendChild(document.createTextNode((m.venueAddr||'') + '  '));
     const map = el('a','maplink','지도 ↗');
     map.href = 'https://map.naver.com/p/search/' + encodeURIComponent(m.venueAddr || m.venue);
     map.target = '_blank'; map.rel = 'noopener';
-    dd.appendChild(map);
-    dl.appendChild(dd);
+    v.appendChild(map);
+    line2.appendChild(v);
   }
-  panel.appendChild(dl);
+  info.appendChild(line2);
+  panel.appendChild(info);
   box.appendChild(panel);
 
   /* 사진 갤러리 */
