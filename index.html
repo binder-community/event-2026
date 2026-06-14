@@ -160,6 +160,21 @@
   .chk .due{flex:0 0 80px;font-size:13px;font-weight:600;color:var(--mint-ink);padding-top:3px}
   .chk .txt{font-size:15px;flex:1;color:var(--body)}
 
+  /* 준비 로드맵 — 세로 스케줄 타임라인 */
+  .schedule{position:relative}
+  .sch-row{display:flex;align-items:stretch;min-height:50px}
+  .sch-date{flex:0 0 62px;text-align:right;padding:13px 12px 0 0;font-size:13.5px;font-weight:700;color:var(--mint-ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .sch-row.done .sch-date{color:var(--sub);font-weight:600}
+  .sch-rail{flex:0 0 24px;position:relative;display:flex;justify-content:center}
+  .sch-rail:before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;transform:translateX(-50%);background:var(--line)}
+  .sch-row:first-child .sch-rail:before{top:19px}
+  .sch-row:last-child .sch-rail:before{bottom:auto;height:19px}
+  .sch-dot{position:relative;z-index:1;margin-top:11px;width:16px;height:16px;border-radius:50%;border:2px solid var(--line-strong);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:0 0 auto}
+  .sch-row.done .sch-dot{background:var(--mint);border-color:var(--mint);color:var(--ink)}
+  .sch-row.done .sch-rail:before{background:var(--mint)}
+  .sch-task{flex:1;padding:12px 0 12px 12px;font-size:15px;color:var(--body);line-height:1.55}
+  .sch-row.done .sch-task{color:var(--sub);text-decoration:line-through}
+
   /* 모집 */
   .bar{height:10px;background:#ecebe9;border-radius:5px;overflow:hidden;margin:16px 0 8px;position:relative}
   .bar .fill{height:100%;background:var(--mint);border-radius:5px;transition:width .3s}
@@ -745,11 +760,32 @@ function checkRow(item, arr, i, withDue, label){
 function renderRoadmap(){
   const s = cur();
   const box = el('div');
-  box.appendChild(pageHead('준비 로드맵', '네모를 누르면 체크 — 체크는 저장 없이 바로 모두에게 반영'));
+  const doneCount = s.roadmap.filter(r=>r.done).length;
+  box.appendChild(pageHead('준비 로드맵', editing()
+    ? '날짜·내용 수정, ✕ 삭제'
+    : '점을 누르면 완료 체크 — 바로 모두에게 반영 · ' + doneCount + '/' + s.roadmap.length + ' 완료'));
   const panel = el('div','panel');
   panel.appendChild(el('div','panel-title','D-50 → 행사 당일'));
-  s.roadmap.forEach((r,i)=> panel.appendChild(checkRow(r, s.roadmap, i, true, '로드맵 항목')));
-  if (editing()) panel.appendChild(addBtn('로드맵 항목 추가', ()=> s.roadmap.push({due:'날짜', task:'', done:false})));
+
+  if (editing()){
+    s.roadmap.forEach((r,i)=> panel.appendChild(checkRow(r, s.roadmap, i, true, '로드맵 항목')));
+    panel.appendChild(addBtn('로드맵 항목 추가', ()=> s.roadmap.push({due:'날짜', task:'', done:false})));
+  } else {
+    const sch = el('div','schedule');
+    s.roadmap.forEach((r,i)=>{
+      const row = el('div','sch-row' + (r.done?' done':''));
+      row.appendChild(el('div','sch-date', r.due));
+      const rail = el('div','sch-rail');
+      const dot = el('div','sch-dot', r.done?'✓':'');
+      dot.title = r.done ? '완료됨 (눌러서 해제)' : '완료로 표시';
+      dot.addEventListener('click', ()=>{ r.done = !r.done; persist(); render(); });
+      rail.appendChild(dot);
+      row.appendChild(rail);
+      row.appendChild(el('div','sch-task', r.task));
+      sch.appendChild(row);
+    });
+    panel.appendChild(sch);
+  }
   box.appendChild(panel);
 
   const panel2 = el('div','panel');
