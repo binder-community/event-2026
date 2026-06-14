@@ -163,8 +163,11 @@
   /* 준비 로드맵 — 세로 스케줄 타임라인 */
   .schedule{position:relative}
   .sch-row{display:flex;align-items:stretch;min-height:50px}
-  .sch-date{flex:0 0 62px;text-align:right;padding:13px 12px 0 0;font-size:13.5px;font-weight:700;color:var(--mint-ink);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .sch-row.done .sch-date{color:var(--sub);font-weight:600}
+  .sch-date{flex:0 0 56px;text-align:right;padding:12px 12px 0 0;font-variant-numeric:tabular-nums}
+  .sch-date-main{font-size:13.5px;font-weight:700;color:var(--mint-ink);white-space:nowrap}
+  .sch-date-sub{font-size:11px;font-weight:700;color:var(--mint-ink);background:var(--mint-bg);border-radius:5px;padding:0 5px;display:inline-block;margin-top:3px;white-space:nowrap}
+  .sch-row.done .sch-date-main{color:var(--sub);font-weight:600}
+  .sch-row.done .sch-date-sub{color:var(--sub);background:var(--line)}
   .sch-rail{flex:0 0 24px;position:relative;display:flex;justify-content:center}
   .sch-rail:before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;transform:translateX(-50%);background:var(--line)}
   .sch-row:first-child .sch-rail:before{top:19px}
@@ -774,7 +777,11 @@ function renderRoadmap(){
     const sch = el('div','schedule');
     s.roadmap.forEach((r,i)=>{
       const row = el('div','sch-row' + (r.done?' done':''));
-      row.appendChild(el('div','sch-date', r.due));
+      const dateCol = el('div','sch-date');
+      const parts = String(r.due || '').trim().split(/\s+/);
+      dateCol.appendChild(el('div','sch-date-main', parts[0] || ''));
+      if (parts.length > 1) dateCol.appendChild(el('div','sch-date-sub', parts.slice(1).join(' ')));
+      row.appendChild(dateCol);
       const rail = el('div','sch-rail');
       const dot = el('div','sch-dot', r.done?'✓':'');
       dot.title = r.done ? '완료됨 (눌러서 해제)' : '완료로 표시';
