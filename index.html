@@ -179,8 +179,26 @@
   .sch-dot{position:relative;z-index:1;margin-top:11px;width:16px;height:16px;border-radius:50%;border:2px solid var(--line-strong);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex:0 0 auto}
   .sch-row.done .sch-dot{background:var(--mint);border-color:var(--mint);color:var(--ink)}
   .sch-row.done .sch-rail:before{background:var(--mint)}
-  .sch-task{flex:1;padding:12px 0 12px 12px;font-size:15px;color:var(--body);line-height:1.55}
-  .sch-row.done .sch-task{color:var(--sub);text-decoration:line-through}
+  .sch-body{flex:1;padding:11px 0 11px 12px;min-width:0}
+  .sch-task{font-size:15px;color:var(--body);line-height:1.5}
+  .sch-row.st2 .sch-task{color:var(--sub);text-decoration:line-through}
+  .sch-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:5px}
+  .sch-owner{font-size:12.5px;color:var(--sub)}
+  /* 진행중 점: 민트 테두리 + 안쪽 점 / 지연·임박 날짜 색 */
+  .sch-row.st1 .sch-dot{border-color:var(--mint);box-shadow:inset 0 0 0 3px var(--mint)}
+  .sch-row.overdue .sch-date-main{color:var(--loss)}
+  .sch-row.soon .sch-date-main{color:var(--pend)}
+  .sch-edit{padding:10px 0;border-bottom:1px solid var(--line)}
+  .sch-edit:last-of-type{border-bottom:none}
+  .sch-edit .e-line{margin-bottom:6px}
+  /* 자료 링크 */
+  .res-row{display:flex;gap:14px;align-items:baseline;padding:11px 2px;border-bottom:1px solid var(--line);font-size:15px}
+  .res-row:last-child{border-bottom:none}
+  .res-label{flex:0 0 140px;font-weight:700;color:var(--ink)}
+  .res-link{color:var(--mint-ink);font-weight:600;text-decoration:none;word-break:break-all}
+  .res-link:hover{text-decoration:underline}
+  .res-empty{color:var(--sub);font-size:13.5px}
+  @media (max-width:768px){ .res-row{flex-direction:column;gap:2px} .res-label{flex:none} }
 
   /* 모집 */
   .bar{height:10px;background:#ecebe9;border-radius:5px;overflow:hidden;margin:16px 0 8px;position:relative}
@@ -350,13 +368,21 @@ const DEFAULT_STATE = {
     { name:'책 플리마켓', owner:'전담 멤버 1명 (미정)', prep:'책 사전 접수, 가격표, 정산 QR', status:0 }
   ],
   roadmap: [
-    { due:'~6/20', task:'카페 사전답사 (답사 체크리스트 확인)', done:false },
-    { due:'~6/27', task:'도영님 세션 주제 확정 · 콘텐츠 담당자 배정 · 참가비 확정 · 행사명 확정', done:false },
-    { due:'~7/4', task:'모집 페이지 오픈(신청폼+입금 안내) · 포스터 완성 · 홍보 시작', done:false },
-    { due:'7/13', task:'중간 점검 게이트 — 신청 15명 미만이면 홍보 2차 + 멤버 +1 초대', done:false },
-    { due:'7/25 D-7', task:'모집 마감 · 리마인드 발송 · 테이블장 배정 · 인쇄물 발주 · 플리마켓 책 접수 마감', done:false },
-    { due:'7/31 D-1', task:'최종 리마인드(장소·시간) · 물품 패킹 · 큐시트 최종본 운영진 공유', done:false },
-    { due:'8/1', task:'행사 당일 — 큐시트대로 운영', done:false }
+    { due:'~6/20', task:'카페 사전답사 (답사 체크리스트 확인)', owner:'예지', status:0, done:false },
+    { due:'~6/27', task:'도영님 세션 주제 확정 · 콘텐츠 담당자 배정 · 참가비 확정 · 행사명 확정', owner:'예지·도영', status:0, done:false },
+    { due:'~7/4', task:'모집 페이지 오픈(신청폼+입금 안내) · 포스터 완성 · 홍보 시작', owner:'예지', status:0, done:false },
+    { due:'7/13', task:'중간 점검 게이트 — 신청 15명 미만이면 홍보 2차 + 멤버 +1 초대', owner:'예지', status:0, done:false },
+    { due:'7/25 D-7', task:'모집 마감 · 리마인드 발송 · 테이블장 배정 · 인쇄물 발주 · 플리마켓 책 접수 마감', owner:'예지', status:0, done:false },
+    { due:'7/31 D-1', task:'최종 리마인드(장소·시간) · 물품 패킹 · 큐시트 최종본 운영진 공유', owner:'예지', status:0, done:false },
+    { due:'8/1', task:'행사 당일 — 큐시트대로 운영', owner:'운영진', status:0, done:false }
+  ],
+  attendees: [],
+  resources: [
+    { label:'모집 신청폼', url:'' },
+    { label:'포스터·홍보 이미지', url:'' },
+    { label:'도영님 세션 자료', url:'' },
+    { label:'정산 계좌·QR', url:'' },
+    { label:'행사 사진 드라이브', url:'' }
   ],
   visitChecklist: [
     { text:'최대 수용 인원 / 테이블·좌석 배치 (체험 세션용 4–6인 테이블 가능?)', done:false },
@@ -451,7 +477,8 @@ const NAV = [
     { id:'roadmap', label:'준비 로드맵' },
     { id:'roles',   label:'역할 분담' },
     { id:'budget',  label:'예산' },
-    { id:'recruit', label:'모집 현황' }
+    { id:'recruit', label:'참가자·모집' },
+    { id:'resources', label:'자료' }
   ]},
   { title:'기록', items:[ { id:'decisions', label:'결정 로그' } ] }
 ];
@@ -524,6 +551,23 @@ function pageHead(title, desc){
 function ddayText(){
   const days = Math.ceil((new Date(cur().meta.date+'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
   return isNaN(days) ? 'D-?' : (days > 0 ? 'D-'+days : (days === 0 ? 'D-DAY' : '종료'));
+}
+/* 로드맵 항목의 상태(0 할일/1 진행중/2 완료) — 옛 done 데이터 호환 */
+function itemStatus(r){
+  if (typeof r.status === 'number') return r.status;
+  return r.done ? 2 : 0;
+}
+/* 마감 임박/지연 판정 (완료 항목은 제외). due 문자열에서 M/D 추출해 오늘과 비교 */
+function urgency(r){
+  if (itemStatus(r) === 2) return 'none';
+  const m = String(r.due||'').match(/(\d{1,2})\/(\d{1,2})/);
+  if (!m) return 'none';
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(today.getFullYear(), (+m[1])-1, +m[2]);
+  const diff = Math.round((d - today) / 86400000);
+  if (diff < 0) return 'overdue';
+  if (diff <= 7) return 'soon';
+  return 'none';
 }
 
 /* ====== 전체 렌더 ====== */
@@ -764,35 +808,63 @@ function checkRow(item, arr, i, withDue, label){
   return row;
 }
 
+const STATUS3 = ['할일','진행중','완료'];
 function renderRoadmap(){
   const s = cur();
   const box = el('div');
-  const doneCount = s.roadmap.filter(r=>r.done).length;
-  box.appendChild(pageHead('준비 로드맵', editing()
-    ? '날짜·내용 수정, ✕ 삭제'
-    : '점을 누르면 완료 체크 — 바로 모두에게 반영 · ' + doneCount + '/' + s.roadmap.length + ' 완료'));
+  const doneCount = s.roadmap.filter(r=>itemStatus(r)===2).length;
+  const overdueCount = s.roadmap.filter(r=>urgency(r)==='overdue').length;
+  let desc = '점을 누르면 할일→진행중→완료로 바뀜 · ' + doneCount + '/' + s.roadmap.length + ' 완료';
+  if (overdueCount) desc += ' · 지연 ' + overdueCount + '건';
+  box.appendChild(pageHead('준비 로드맵', editing() ? '날짜·내용·담당자 수정, ✕ 삭제' : desc));
   const panel = el('div','panel');
   panel.appendChild(el('div','panel-title','D-50 → 행사 당일'));
 
   if (editing()){
-    s.roadmap.forEach((r,i)=> panel.appendChild(checkRow(r, s.roadmap, i, true, '로드맵 항목')));
-    panel.appendChild(addBtn('로드맵 항목 추가', ()=> s.roadmap.push({due:'날짜', task:'', done:false})));
+    s.roadmap.forEach((r,i)=>{
+      const wrap = el('div','sch-edit');
+      const l1 = el('div','e-line');
+      const due = inp(r,'due',{sm:true}); due.placeholder='날짜'; l1.appendChild(due);
+      const task = inp(r,'task'); task.placeholder='할 일'; task.style.flex='1'; task.style.minWidth='150px'; l1.appendChild(task);
+      const l2 = el('div','e-line');
+      l2.appendChild(el('span','e-label','담당'));
+      const owner = inp(r,'owner',{sm:true}); owner.placeholder='담당자'; owner.style.width='120px'; l2.appendChild(owner);
+      const stChip = el('span','badge s'+itemStatus(r)+' clickable', STATUS3[itemStatus(r)]);
+      stChip.addEventListener('click', ()=>{ const n=(itemStatus(r)+1)%3; r.status=n; r.done=(n===2); render(); });
+      l2.appendChild(stChip);
+      const tools = el('div','e-row-tools'); tools.style.marginLeft='auto';
+      tools.appendChild(upBtn(s.roadmap,i)); tools.appendChild(delBtn(s.roadmap,i,'로드맵 항목'));
+      l2.appendChild(tools);
+      wrap.appendChild(l1); wrap.appendChild(l2);
+      panel.appendChild(wrap);
+    });
+    panel.appendChild(addBtn('로드맵 항목 추가', ()=> s.roadmap.push({due:'날짜', task:'', owner:'', status:0, done:false})));
   } else {
     const sch = el('div','schedule');
     s.roadmap.forEach((r,i)=>{
-      const row = el('div','sch-row' + (r.done?' done':''));
+      const st = itemStatus(r);
+      const urg = urgency(r);
+      const row = el('div','sch-row st'+st + (urg!=='none'?' '+urg:''));
       const dateCol = el('div','sch-date');
       const parts = String(r.due || '').trim().split(/\s+/);
       dateCol.appendChild(el('div','sch-date-main', parts[0] || ''));
       if (parts.length > 1) dateCol.appendChild(el('div','sch-date-sub', parts.slice(1).join(' ')));
       row.appendChild(dateCol);
       const rail = el('div','sch-rail');
-      const dot = el('div','sch-dot', r.done?'✓':'');
-      dot.title = r.done ? '완료됨 (눌러서 해제)' : '완료로 표시';
-      dot.addEventListener('click', ()=>{ r.done = !r.done; persist(); render(); });
+      const dot = el('div','sch-dot', st===2?'✓':'');
+      dot.title = '상태: ' + STATUS3[st] + ' (눌러서 변경)';
+      dot.addEventListener('click', ()=>{ const n=(st+1)%3; r.status=n; r.done=(n===2); persist(); render(); });
       rail.appendChild(dot);
       row.appendChild(rail);
-      row.appendChild(el('div','sch-task', r.task));
+      const body = el('div','sch-body');
+      body.appendChild(el('div','sch-task', r.task));
+      const meta = el('div','sch-meta');
+      if (r.owner) meta.appendChild(el('span','sch-owner', '담당 ' + r.owner));
+      if (st===1) meta.appendChild(el('span','badge s1','진행중'));
+      if (urg==='overdue') meta.appendChild(el('span','badge neg','지남'));
+      else if (urg==='soon') meta.appendChild(el('span','badge s0','임박'));
+      if (meta.children.length) body.appendChild(meta);
+      row.appendChild(body);
       sch.appendChild(row);
     });
     panel.appendChild(sch);
@@ -1022,21 +1094,24 @@ function renderFlea(){
 function renderRecruit(){
   const s = cur();
   const r = s.recruit;
+  const atts = s.attendees || [];
+  const paidCount = atts.filter(a=>a.paid).length;
+  const hasList = atts.length > 0;
+  const current = hasList ? paidCount : (r.current || 0);   /* 명단 있으면 입금확정 수로 자동 */
   const box = el('div');
-  box.appendChild(pageHead('모집 현황', editing() ? '신청 인원·목표·손익분기 숫자 수정' : '신청(입금 확정) 기준'));
-  const panel = el('div','panel');
+  box.appendChild(pageHead('참가자·모집', editing() ? '명단·목표 수정 · 입금 표시 누르면 토글' : '입금 확정 ' + current + '명' + (hasList ? ' / 신청 ' + atts.length + '명' : '')));
 
+  /* 진행 바 패널 */
+  const panel = el('div','panel');
   if (!editing()){
     const big = el('div','recruit-big');
-    big.append(String(r.current));
-    const sp = el('span','', ' / 목표 ' + r.goal + '명');
-    big.appendChild(sp);
+    big.append(String(current));
+    big.appendChild(el('span','', ' / 목표 ' + r.goal + '명'));
     panel.appendChild(big);
   }
-
   const bar = el('div','bar');
   const fill = el('div','fill');
-  fill.style.width = Math.min(100, (r.current/(r.max||1))*100) + '%';
+  fill.style.width = Math.min(100, (current/(r.max||1))*100) + '%';
   bar.appendChild(fill);
   const mark = el('div','bep-mark');
   mark.style.left = Math.min(100,(r.breakeven/(r.max||1))*100) + '%';
@@ -1046,7 +1121,9 @@ function renderRecruit(){
 
   if (editing()){
     const grid = el('div','recruit-edit');
-    [['현재 신청(입금 확정)','current'], ['손익분기','breakeven'], ['목표','goal'], ['최대','max']].forEach(([label,key])=>{
+    const fields = [['손익분기','breakeven'], ['목표','goal'], ['최대','max']];
+    if (!hasList) fields.unshift(['현재 입금확정(명단 없을 때)','current']);
+    fields.forEach(([label,key])=>{
       const cell = el('div');
       cell.appendChild(el('label','',label));
       cell.appendChild(inp(r,key,{number:true}));
@@ -1059,6 +1136,74 @@ function renderRecruit(){
     nums.appendChild(el('span','', '최대 ' + r.max + '명'));
     panel.appendChild(nums);
   }
+  box.appendChild(panel);
+
+  /* 참가자 명단 */
+  const lp = el('div','panel');
+  lp.appendChild(el('div','panel-title','참가자 명단' + (hasList ? ' (' + paidCount + '/' + atts.length + ' 입금)' : '')));
+  if (!hasList && !editing()){
+    lp.appendChild(el('div','cm-empty','아직 신청자가 없어요. 수정 모드에서 추가하세요.'));
+  } else {
+    const t = el('table');
+    const thead = el('thead'); const hr = el('tr');
+    ['이름','입금','테이블','비고', ...(editing()?['']:[])].forEach(h=> hr.appendChild(el('th','',h)));
+    thead.appendChild(hr); t.appendChild(thead);
+    const tb = el('tbody');
+    atts.forEach((a,i)=>{
+      const tr = el('tr');
+      if (editing()){
+        const td1=el('td'); td1.appendChild(inp(a,'name')); tr.appendChild(td1);
+        const td2=el('td'); const pb=el('span','badge '+(a.paid?'s2':'s0')+' clickable', a.paid?'입금':'대기');
+        pb.addEventListener('click',()=>{ a.paid=!a.paid; render(); }); td2.appendChild(pb); tr.appendChild(td2);
+        const td3=el('td'); const tin=inp(a,'table',{sm:true}); tin.style.width='70px'; td3.appendChild(tin); tr.appendChild(td3);
+        const td4=el('td'); td4.appendChild(inp(a,'note')); tr.appendChild(td4);
+        const td5=el('td'); td5.appendChild(delBtn(s.attendees,i,'참가자 "'+(a.name||'')+'"')); tr.appendChild(td5);
+      } else {
+        tr.appendChild(el('td','',a.name||''));
+        const td2=el('td'); const pb=el('span','badge '+(a.paid?'s2':'s0')+' clickable', a.paid?'입금':'대기');
+        pb.title='눌러서 입금 토글'; pb.addEventListener('click',()=>{ a.paid=!a.paid; persist(); render(); }); td2.appendChild(pb); tr.appendChild(td2);
+        tr.appendChild(el('td','',a.table||''));
+        tr.appendChild(el('td','note-cell',a.note||''));
+      }
+      tb.appendChild(tr);
+    });
+    t.appendChild(tb); lp.appendChild(t);
+  }
+  if (editing()) lp.appendChild(addBtn('참가자 추가', ()=> s.attendees.push({name:'', paid:false, table:'', note:''})));
+  box.appendChild(lp);
+  return box;
+}
+
+function renderResources(){
+  const s = cur();
+  const list = s.resources || [];
+  const box = el('div');
+  box.appendChild(pageHead('자료', editing() ? '이름·링크(URL) 수정 · ✕ 삭제' : '운영 중 자주 찾는 링크 모음'));
+  const panel = el('div','panel');
+  if (!list.length && !editing()){
+    panel.appendChild(el('div','cm-empty','등록된 자료가 없어요.'));
+  }
+  list.forEach((it,i)=>{
+    if (editing()){
+      const row = el('div','e-line'); row.style.marginBottom='8px';
+      const nm = inp(it,'label',{sm:true}); nm.placeholder='이름'; nm.style.width='130px'; row.appendChild(nm);
+      const u = inp(it,'url'); u.placeholder='https://...'; u.style.flex='1'; row.appendChild(u);
+      const tools=el('div','e-row-tools'); tools.appendChild(delBtn(s.resources,i,'자료 "'+(it.label||'')+'"')); row.appendChild(tools);
+      panel.appendChild(row);
+    } else {
+      const row = el('div','res-row');
+      row.appendChild(el('span','res-label', it.label || ''));
+      if (it.url){
+        const a = el('a','res-link', it.url.replace(/^https?:\/\//,'').slice(0,48) + ' ↗');
+        a.href = it.url; a.target='_blank'; a.rel='noopener';
+        row.appendChild(a);
+      } else {
+        row.appendChild(el('span','res-empty','미등록'));
+      }
+      panel.appendChild(row);
+    }
+  });
+  if (editing()) panel.appendChild(addBtn('자료 링크 추가', ()=> s.resources.push({label:'', url:''})));
   box.appendChild(panel);
   return box;
 }
@@ -1184,7 +1329,7 @@ function renderComments(section){
 const RENDERERS = {
   home: renderHome, venue: renderVenue, timeline: renderTimeline, contents: renderContents,
   roadmap: renderRoadmap, budget: renderBudget, roles: renderRoles,
-  flea: renderFlea, recruit: renderRecruit, decisions: renderDecisions
+  flea: renderFlea, recruit: renderRecruit, resources: renderResources, decisions: renderDecisions
 };
 
 /* ====== 시작 ====== */
