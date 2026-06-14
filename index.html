@@ -90,6 +90,13 @@
   .page-desc{font-size:14px;color:var(--sub);margin-top:6px;margin-bottom:26px}
   .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:18px;overflow-x:auto}
   .panel-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:12px}
+  .maplink{color:var(--mint-ink);font-weight:600;font-size:13.5px;text-decoration:none;white-space:nowrap}
+  .maplink:hover{text-decoration:underline}
+  .photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:4px}
+  .photo{display:block;border-radius:10px;overflow:hidden;border:1px solid var(--line);aspect-ratio:4/3;background:var(--line)}
+  .photo img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
+  .photo:hover img{transform:scale(1.04)}
+  @media (max-width:768px){ .photo-grid{grid-template-columns:repeat(2,1fr)} }
 
   table{width:100%;border-collapse:collapse;font-size:15px}
   th{font-size:13px;color:var(--sub);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line-strong);white-space:nowrap}
@@ -284,9 +291,22 @@ const DEFAULT_STATE = {
     dateLabel: '8월 1일 (토)',
     time: '16:30 – 19:00 (대관 15–20시)',
     venue: '성수 서브젝티브 카페',
+    venueAddr: '서울 성동구 광나루로 229 (송정동) 1F · Objective Studio C zone',
     fee: '25,000원 (안)',
     capacity: '20–40명'
   },
+  venuePhotos: [
+    'https://cdn.imweb.me/thumbnail/20260112/0063817b3a389.jpg',
+    'https://cdn.imweb.me/thumbnail/20260112/fbdf6acdb8d67.jpg',
+    'https://cdn.imweb.me/thumbnail/20260112/2f73549df90a2.jpg',
+    'https://cdn.imweb.me/thumbnail/20260112/b58c840d17ad0.jpg',
+    'https://cdn.imweb.me/thumbnail/20260112/2d81999df66bb.jpg',
+    'https://cdn.imweb.me/thumbnail/20260112/6570d4fb1ec8d.jpg',
+    'https://cdn.imweb.me/thumbnail/20260112/acd97e096ea63.jpg',
+    'https://cdn.imweb.me/thumbnail/20260112/7fcac67931506.jpeg',
+    'https://cdn.imweb.me/thumbnail/20260112/0bc086674b26d.jpeg',
+    'https://cdn.imweb.me/thumbnail/20260112/3bb1096c371b6.jpeg'
+  ],
   recruit: { current: 0, goal: 30, breakeven: 32, max: 40 },
   timeline: [
     { time:'15:00', len:'50분', title:'운영진 세팅', desc:'부스·명찰·접수대, 음향/빔 테스트, 테이블 배치', main:false },
@@ -400,6 +420,7 @@ function cancelEdit(){
 const NAV = [
   { items:[ { id:'home', label:'개요' } ] },
   { title:'당일 진행', items:[
+    { id:'venue',    label:'공간' },
     { id:'timeline', label:'당일 타임라인' },
     { id:'contents', label:'콘텐츠' },
     { id:'flea',     label:'플리마켓' }
@@ -860,6 +881,62 @@ function renderRoles(){
   return box;
 }
 
+function renderVenue(){
+  const s = cur();
+  const m = s.meta;
+  const photos = s.venuePhotos || [];
+  const box = el('div');
+  box.appendChild(pageHead('공간', editing() ? '주소 수정 · 사진 URL 추가/삭제' : '성수 서브젝티브 카페 (대관 공간)'));
+
+  /* 주소 패널 */
+  const panel = el('div','panel');
+  const dl = el('div','facts');
+  dl.appendChild(el('dt','','장소'));
+  if (editing()){ const dd=el('dd'); dd.appendChild(inp(m,'venue')); dl.appendChild(dd); }
+  else dl.appendChild(el('dd','', m.venue));
+  dl.appendChild(el('dt','','주소'));
+  if (editing()){ const dd=el('dd'); dd.appendChild(inp(m,'venueAddr')); dl.appendChild(dd); }
+  else {
+    const dd = el('dd');
+    dd.appendChild(document.createTextNode((m.venueAddr||'') + '  '));
+    const map = el('a','maplink','지도 ↗');
+    map.href = 'https://map.naver.com/p/search/' + encodeURIComponent(m.venueAddr || m.venue);
+    map.target = '_blank'; map.rel = 'noopener';
+    dd.appendChild(map);
+    dl.appendChild(dd);
+  }
+  panel.appendChild(dl);
+  box.appendChild(panel);
+
+  /* 사진 갤러리 */
+  if (editing()){
+    const ep = el('div','panel');
+    ep.appendChild(el('div','panel-title','사진 (URL)'));
+    photos.forEach((url,i)=>{
+      const row = el('div','e-line'); row.style.marginBottom='7px';
+      const t = document.createElement('input'); t.className='e-in'; t.value=url;
+      t.addEventListener('input', ()=>{ photos[i]=t.value; });
+      row.appendChild(t);
+      const tools = el('div','e-row-tools'); tools.appendChild(delBtn(photos,i,'사진')); row.appendChild(tools);
+      ep.appendChild(row);
+    });
+    ep.appendChild(addBtn('사진 URL 추가', ()=> photos.push('')));
+    box.appendChild(ep);
+  } else if (photos.length){
+    const grid = el('div','photo-grid');
+    photos.forEach(url=>{
+      const a = el('a','photo'); a.href=url; a.target='_blank'; a.rel='noopener';
+      const img = document.createElement('img');
+      img.src = url; img.loading='lazy'; img.alt='공간 사진';
+      a.appendChild(img); grid.appendChild(a);
+    });
+    box.appendChild(grid);
+    const cap = el('p','page-desc','사진을 누르면 크게 볼 수 있어요 · 출처: objectivestudio.co.kr');
+    cap.style.marginTop='12px'; box.appendChild(cap);
+  }
+  return box;
+}
+
 function renderFlea(){
   const s = cur();
   const box = el('div');
@@ -1052,7 +1129,7 @@ function renderComments(section){
 }
 
 const RENDERERS = {
-  home: renderHome, timeline: renderTimeline, contents: renderContents,
+  home: renderHome, venue: renderVenue, timeline: renderTimeline, contents: renderContents,
   roadmap: renderRoadmap, budget: renderBudget, roles: renderRoles,
   flea: renderFlea, recruit: renderRecruit, decisions: renderDecisions
 };
