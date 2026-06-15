@@ -576,7 +576,7 @@ function render(){
   const page = document.getElementById('page');
   page.textContent = '';
   page.appendChild(RENDERERS[active]());
-  if (!editing() && active !== 'home') page.appendChild(renderComments(active));
+  if (active !== 'home') page.appendChild(renderComments(active));
   renderFab();
 }
 
@@ -1264,13 +1264,10 @@ function addComment(section){
 }
 function delComment(section, key, name){
   if (!confirm(name + '님의 댓글을 삭제할까요?')) return;
-  if (db){
-    db.ref(COMMENTS_PATH + '/' + section + '/' + key).remove();
-  } else {
-    delete comments[section][key];
-    persistLocalComments();
-    render();
-  }
+  if (db) db.ref(COMMENTS_PATH + '/' + section + '/' + key).remove();
+  else persistLocalComments();
+  if (comments[section]) delete comments[section][key];   /* 화면 즉시 반영 (수정 모드에선 리스너가 render 안 함) */
+  render();
 }
 function fmtTs(ts){
   const d = new Date(ts);
@@ -1286,7 +1283,7 @@ function renderComments(section){
   panel.appendChild(el('div','panel-title', '댓글' + (list.length ? ' ' + list.length : '')));
 
   if (!list.length){
-    panel.appendChild(el('div','cm-empty','아직 댓글이 없어요. 이 화면에 대한 의견을 남겨보세요.'));
+    panel.appendChild(el('div','cm-empty', editing() ? '댓글 없음.' : '아직 댓글이 없어요. 이 화면에 대한 의견을 남겨보세요.'));
   }
   list.forEach(c=>{
     const row = el('div','cm-item');
@@ -1297,12 +1294,20 @@ function renderComments(section){
     body.appendChild(head);
     body.appendChild(el('div','cm-text', c.text));
     row.appendChild(body);
-    const del = el('button','tool-btn del','✕');
-    del.title = '삭제';
-    del.addEventListener('click', ()=> delComment(section, c.key, c.name || '익명'));
-    row.appendChild(del);
+    if (editing()){   /* 삭제는 수정 모드에서만 — 평소엔 실수로 못 지움 */
+      const del = el('button','tool-btn del','✕');
+      del.title = '삭제';
+      del.addEventListener('click', ()=> delComment(section, c.key, c.name || '익명'));
+      row.appendChild(del);
+    }
     panel.appendChild(row);
   });
+
+  /* 수정 모드에선 작성 폼 대신 안내만, 평소엔 작성 폼 */
+  if (editing()){
+    if (list.length) panel.appendChild(el('div','cm-empty','✕ 로 댓글 삭제 가능 (수정 모드에서만)'));
+    return panel;
+  }
 
   const form = el('div','cm-form');
   const nameIn = document.createElement('input');
