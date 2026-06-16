@@ -255,8 +255,8 @@
   .cm-form button{border:none;background:var(--ink);color:#fff;border-radius:7px;padding:0 16px;font-size:14px;cursor:pointer;height:35px}
   /* 모바일: 입력칸 16px(아이폰 자동확대 방지) + 등록 버튼 한 줄 전체 폭 */
   @media (max-width:768px){
-    .cm-form .name{flex:1 1 100%}
-    .cm-form .text{flex:1 1 auto;min-width:0}
+    .cm-form .name{flex:0 0 78px}
+    .cm-form .text{flex:1 1 0;min-width:0}
     .cm-form button{flex:0 0 100%;height:42px}
     .cm-form .e-in{font-size:16px}
     .cm-text{font-size:15.5px}
@@ -1440,37 +1440,43 @@ function startLocal(){
 }
 
 function startShared(){
-  const scripts = [
-    'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js'
+  /* CDN 폴백: jsdelivr 먼저(폰에서 폰트도 여기서 잘 받아짐), 막히면 gstatic 재시도 */
+  const CDNS = [
+    { app:'https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-app-compat.js',
+      db: 'https://cdn.jsdelivr.net/npm/firebase@10.12.0/firebase-database-compat.js' },
+    { app:'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
+      db: 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js' }
   ];
-  let loaded = 0;
-  scripts.forEach(src=>{
+  let started = false;
+  function loadScript(src, ok, err){
     const sc = document.createElement('script');
-    sc.src = src;
-    sc.onload = ()=>{
-      loaded++;
-      if (loaded === scripts.length){
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.database();
-        db.ref(DB_PATH).on('value', snap=>{
-          const val = snap.val();
-          if (val) state = mergeState(val);
-          else db.ref(DB_PATH).set(state);
-          connected = true;
-          /* 수정 모드 중엔 화면을 덮어쓰지 않음 (저장 시 내 내용이 반영됨) */
-          if (!editing()) render();
-          else renderChrome();
-        });
-        db.ref(COMMENTS_PATH).on('value', snap=>{
-          comments = snap.val() || {};
-          if (!editing()) render();
-        });
-      }
-    };
-    sc.onerror = ()=>{ startLocal(); };
+    sc.src = src; sc.onload = ok; sc.onerror = err;
     document.head.appendChild(sc);
-  });
+  }
+  function init(){
+    if (started) return; started = true;
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    db.ref(DB_PATH).on('value', snap=>{
+      const val = snap.val();
+      if (val) state = mergeState(val);
+      else db.ref(DB_PATH).set(state);
+      connected = true;
+      if (!editing()) render();   /* 수정 모드 중엔 화면 안 덮어씀 */
+      else renderChrome();
+    });
+    db.ref(COMMENTS_PATH).on('value', snap=>{
+      comments = snap.val() || {};
+      if (!editing()) render();
+    });
+  }
+  function tryCDN(i){
+    if (i >= CDNS.length){ startLocal(); return; }   /* 전부 실패 → 오프라인(로컬) */
+    loadScript(CDNS[i].app,
+      ()=> loadScript(CDNS[i].db, init, ()=>tryCDN(i+1)),
+      ()=> tryCDN(i+1));
+  }
+  tryCDN(0);
 }
 
 render();
