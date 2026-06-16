@@ -199,6 +199,24 @@
   .res-link:hover{text-decoration:underline}
   .res-empty{color:var(--sub);font-size:13.5px}
   @media (max-width:768px){ .res-row{flex-direction:column;gap:2px} .res-label{flex:none} }
+  /* 레퍼런스 갤러리 */
+  .ref-filter{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+  .ref-fchip{font-size:13px;border:1px solid var(--line-strong);border-radius:999px;padding:5px 13px;cursor:pointer;color:var(--sub);background:var(--surface)}
+  .ref-fchip:hover{border-color:var(--mint-ink);color:var(--mint-ink)}
+  .ref-fchip.on{background:var(--mint-bg);border-color:var(--mint);color:var(--mint-ink);font-weight:700}
+  .ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .ref-card{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface);text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
+  a.ref-card:hover{border-color:var(--mint);transform:translateY(-2px)}
+  .ref-img{width:100%;aspect-ratio:16/10;object-fit:cover;display:block;background:var(--line)}
+  .ref-body{padding:13px 14px;display:flex;flex-direction:column;gap:7px}
+  .ref-title{font-size:15px;font-weight:700;color:var(--ink);line-height:1.4}
+  .ref-tags{display:flex;flex-wrap:wrap;gap:5px}
+  .ref-tag{font-size:11.5px;font-weight:600;color:var(--mint-ink);background:var(--mint-bg);border-radius:5px;padding:1px 7px}
+  .ref-note{font-size:13.5px;color:var(--sub);line-height:1.5}
+  .ref-edit{padding:12px 0;border-bottom:1px solid var(--line)}
+  .ref-edit:last-of-type{border-bottom:none}
+  .ref-edit .e-line{margin-bottom:6px}
+  @media (max-width:768px){ .ref-grid{grid-template-columns:1fr 1fr;gap:10px} .ref-body{padding:10px} }
 
   /* 모집 */
   .bar{height:10px;background:#ecebe9;border-radius:5px;overflow:hidden;margin:16px 0 8px;position:relative}
@@ -384,6 +402,10 @@ const DEFAULT_STATE = {
     { label:'정산 계좌·QR', url:'' },
     { label:'행사 사진 드라이브', url:'' }
   ],
+  references: [
+    { title:'터틀넥프레스 도서전 세션 구성', url:'https://www.instagram.com/p/DYojBOgEzYL/', image:'', note:"특이한 세션 많음(진 만들기·스트레칭 등) · 사전신청 300명. '세션이 매력적이어야' 참고", tags:['세션','도서전','벤치마킹'] },
+    { title:'서브젝티브 공간 (대관)', url:'https://www.objectivestudio.co.kr/83', image:'https://cdn.imweb.me/thumbnail/20260112/0063817b3a389.jpg', note:'높은 층고·자연광·복층. 동선·세팅 참고', tags:['공간'] }
+  ],
   visitChecklist: [
     { text:'최대 수용 인원 / 테이블·좌석 배치 (체험 세션용 4–6인 테이블 가능?)', done:false },
     { text:'마이크·스피커·빔/스크린 유무', done:false },
@@ -480,7 +502,10 @@ const NAV = [
     { id:'recruit', label:'참가자·모집' },
     { id:'resources', label:'자료' }
   ]},
-  { title:'기록', items:[ { id:'decisions', label:'결정 로그' } ] }
+  { title:'기록', items:[
+    { id:'references', label:'레퍼런스' },
+    { id:'decisions', label:'결정 로그' }
+  ] }
 ];
 const SECTIONS = NAV.flatMap(g=>g.items);
 let active = SECTIONS.some(s=>s.id===location.hash.slice(1)) ? location.hash.slice(1) : 'home';
@@ -1208,6 +1233,64 @@ function renderResources(){
   return box;
 }
 
+let refFilter = null;   /* 선택된 태그 (null=전체) */
+function renderReferences(){
+  const s = cur();
+  const list = s.references || [];
+  const box = el('div');
+  box.appendChild(pageHead('레퍼런스', editing()
+    ? '제목·링크·이미지URL·메모·태그(쉼표로 구분) 수정 · ✕ 삭제'
+    : '참고할 링크·사진·게시물 모음 · 카드를 누르면 원본으로'));
+
+  if (editing()){
+    const panel = el('div','panel');
+    list.forEach((it,i)=>{
+      const card = el('div','ref-edit');
+      const l1 = el('div','e-line'); const t=inp(it,'title'); t.placeholder='제목'; t.style.flex='1'; l1.appendChild(t);
+      const tools=el('div','e-row-tools'); tools.appendChild(upBtn(s.references,i)); tools.appendChild(delBtn(s.references,i,'레퍼런스 "'+(it.title||'')+'"')); l1.appendChild(tools);
+      card.appendChild(l1);
+      const l2=el('div','e-line'); l2.appendChild(el('span','e-label','링크')); const u=inp(it,'url'); u.placeholder='https://...'; u.style.flex='1'; l2.appendChild(u); card.appendChild(l2);
+      const l3=el('div','e-line'); l3.appendChild(el('span','e-label','이미지')); const im=inp(it,'image'); im.placeholder='이미지 URL (선택)'; im.style.flex='1'; l3.appendChild(im); card.appendChild(l3);
+      const l4=el('div','e-line'); l4.appendChild(el('span','e-label','태그')); const tg=document.createElement('input'); tg.className='e-in'; tg.style.flex='1'; tg.placeholder='쉼표로 구분 (예: 세션, 공간)'; tg.value=(it.tags||[]).join(', '); tg.addEventListener('input',()=>{ it.tags = tg.value.split(',').map(x=>x.trim()).filter(Boolean); }); l4.appendChild(tg); card.appendChild(l4);
+      const l5=el('div','e-line'); l5.appendChild(el('span','e-label','메모')); const nt=inp(it,'note'); nt.placeholder='메모'; nt.style.flex='1'; l5.appendChild(nt); card.appendChild(l5);
+      panel.appendChild(card);
+    });
+    panel.appendChild(addBtn('레퍼런스 추가', ()=> s.references.push({title:'', url:'', image:'', note:'', tags:[]})));
+    box.appendChild(panel);
+    return box;
+  }
+
+  if (!list.length){
+    const p=el('div','panel'); p.appendChild(el('div','cm-empty','아직 모은 레퍼런스가 없어요. 수정 모드에서 추가하세요.')); box.appendChild(p); return box;
+  }
+
+  /* 태그 필터 바 */
+  const allTags = [...new Set(list.flatMap(it=>it.tags||[]))];
+  if (allTags.length){
+    const fb = el('div','ref-filter');
+    const mkChip=(label,val)=>{ const c=el('span','ref-fchip'+(refFilter===val?' on':''),label); c.addEventListener('click',()=>{ refFilter=val; render(); }); return c; };
+    fb.appendChild(mkChip('전체', null));
+    allTags.forEach(t=> fb.appendChild(mkChip('#'+t, t)));
+    box.appendChild(fb);
+  }
+
+  const shown = refFilter ? list.filter(it=>(it.tags||[]).includes(refFilter)) : list;
+  const grid = el('div','ref-grid');
+  shown.forEach(it=>{
+    const card = el('a','ref-card');
+    if (it.url){ card.href=it.url; card.target='_blank'; card.rel='noopener'; } else { card.removeAttribute('href'); card.style.cursor='default'; }
+    if (it.image){ const im=document.createElement('img'); im.className='ref-img'; im.src=it.image; im.loading='lazy'; im.alt=''; card.appendChild(im); }
+    const bd = el('div','ref-body');
+    if (it.title) bd.appendChild(el('div','ref-title', it.title + (it.url?' ↗':'')));
+    if ((it.tags||[]).length){ const tw=el('div','ref-tags'); it.tags.forEach(t=> tw.appendChild(el('span','ref-tag','#'+t))); bd.appendChild(tw); }
+    if (it.note) bd.appendChild(el('div','ref-note', it.note));
+    card.appendChild(bd);
+    grid.appendChild(card);
+  });
+  box.appendChild(grid);
+  return box;
+}
+
 function renderDecisions(){
   const s = cur();
   const box = el('div');
@@ -1334,7 +1417,7 @@ function renderComments(section){
 const RENDERERS = {
   home: renderHome, venue: renderVenue, timeline: renderTimeline, contents: renderContents,
   roadmap: renderRoadmap, budget: renderBudget, roles: renderRoles,
-  flea: renderFlea, recruit: renderRecruit, resources: renderResources, decisions: renderDecisions
+  flea: renderFlea, recruit: renderRecruit, resources: renderResources, references: renderReferences, decisions: renderDecisions
 };
 
 /* ====== 시작 ====== */
