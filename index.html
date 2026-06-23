@@ -1128,49 +1128,104 @@ function renderHome(){
   return box;
 }
 
-function renderTimeline(){
-  const s = cur();
-  const box = el('div');
-  box.appendChild(pageHead('당일 타임라인', editing()
-    ? '시간·내용 수정, ↑ 순서 이동, ✕ 삭제 · "본행사" 체크 시 강조 표시'
-    : '시간이 붉은 항목이 본행사 큐시트 · 밀리면 패널토크 축소가 1순위 조정안'));
-  const panel = el('div','panel');
+function parseMin(t){ const m=String(t||'').match(/(\d{1,2}):(\d{2})/); return m ? (+m[1])*60+(+m[2]) : null; }
+function parseLen(l){ const m=String(l||'').match(/(\d+)/); return m ? +m[1] : 0; }
+function fmtMin(x){ x=((x%1440)+1440)%1440; return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0'); }
+function computeTimes(tl){ if(!tl||!tl.length) return; let c=parseMin(tl[0].time); if(c==null) c=900; tl.forEach(it=>{ it.time=fmtMin(c); c+=parseLen(it.len); }); }
+let tlStyle=(function(){ try{ return localStorage.getItem('tl-style')||'A'; }catch(e){ return 'A'; } })();
+function tlStyleToggle(){
+  const row=el('div'); row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px';
+  const wrap=el('div'); wrap.style.cssText='display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden';
+  [['A','표 형식'],['B','레일 카드']].forEach(([k,lab])=>{
+    const b=el('button','',lab); const on=tlStyle===k;
+    b.style.cssText='border:none;cursor:pointer;padding:7px 16px;font-size:13px;font-weight:700;'+(on?'background:var(--mint-bg);color:var(--mint-ink)':'background:var(--surface);color:var(--sub)');
+    b.addEventListener('click',()=>{ tlStyle=k; try{localStorage.setItem('tl-style',k);}catch(e){} render(); });
+    wrap.appendChild(b);
+  });
+  const cap=el('span','','← 편집 스타일 두 가지 비교용 (마음에 드는 걸로 알려줘)'); cap.style.cssText='font-size:12px;color:var(--sub)';
+  row.appendChild(wrap); row.appendChild(cap);
+  return row;
+}
+function tlStartControl(s){
+  const ctl=el('div'); ctl.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap';
+  const lab=el('span','','시작 시간'); lab.style.cssText='font-size:13px;font-weight:700;color:var(--ink)';
+  const st=document.createElement('input'); st.className='e-in sm'; st.value=s.timeline[0]?s.timeline[0].time:'15:00';
+  st.style.cssText='width:84px;font-size:16px;font-weight:800;color:var(--mint-ink)';
+  st.addEventListener('input',()=>{ if(s.timeline[0]) s.timeline[0].time=st.value; });
+  st.addEventListener('blur',render);
+  const hint=el('span','','길이를 바꾸면 뒤 시간이 자동으로 밀려요'); hint.style.cssText='font-size:12px;color:var(--sub)';
+  ctl.appendChild(lab); ctl.appendChild(st); ctl.appendChild(hint);
+  return ctl;
+}
+function tlView(s,box){
+  const panel=el('div','panel');
+  s.timeline.forEach(t=>{
+    const row=el('div','tl-item'+(t.main?' main':''));
+    row.appendChild(el('div','tl-time',t.time));
+    const body=el('div','tl-body');
+    const title=el('div','t',t.title); title.appendChild(el('span','len',t.len)); body.appendChild(title);
+    if(t.desc) body.appendChild(el('div','d',t.desc));
+    row.appendChild(body); panel.appendChild(row);
+  });
+  box.appendChild(panel);
+}
+function tlEditA(s,box){
+  const panel=el('div','panel');
+  const G='display:grid;grid-template-columns:70px 56px 1fr 56px;gap:7px;align-items:start';
+  const head=el('div'); head.style.cssText=G+';padding:0 2px 7px;font-size:11px;color:var(--sub);font-weight:700;align-items:center';
+  ['시간','길이','프로그램 / 설명',''].forEach(h=>head.appendChild(el('span','',h)));
+  panel.appendChild(head);
   s.timeline.forEach((t,i)=>{
-    const row = el('div','tl-item' + (t.main?' main':''));
-    if (editing()){
-      const stack = el('div','e-stack');
-      const l1 = el('div','e-line');
-      const ti = inp(t,'time',{sm:true}); ti.placeholder='시간';
-      const le = inp(t,'len',{sm:true}); le.placeholder='길이';
-      const na = inp(t,'title'); na.placeholder='제목'; na.style.flex='1'; na.style.minWidth='140px';
-      l1.appendChild(ti); l1.appendChild(le); l1.appendChild(na);
-      const l2 = el('div','e-line');
-      const de = inp(t,'desc'); de.placeholder='설명'; de.style.flex='1';
-      l2.appendChild(de);
-      const l3 = el('div','e-line');
-      const mt = el('label','main-toggle');
-      const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!t.main;
-      cb.addEventListener('change', ()=>{ t.main = cb.checked; });
-      mt.appendChild(cb); mt.appendChild(document.createTextNode('본행사'));
-      const tools = el('div','e-row-tools');
-      tools.appendChild(upBtn(s.timeline,i));
-      tools.appendChild(delBtn(s.timeline,i,'타임라인 "' + t.title + '"'));
-      l3.appendChild(mt); l3.style.justifyContent='space-between'; l3.appendChild(tools);
-      stack.appendChild(l1); stack.appendChild(l2); stack.appendChild(l3);
-      row.appendChild(stack);
-    } else {
-      row.appendChild(el('div','tl-time', t.time));
-      const body = el('div','tl-body');
-      const title = el('div','t', t.title);
-      title.appendChild(el('span','len', t.len));
-      body.appendChild(title);
-      if (t.desc) body.appendChild(el('div','d', t.desc));
-      row.appendChild(body);
-    }
+    const row=el('div'); row.style.cssText=G+';background:var(--surface);border:1px solid '+(t.main?'var(--mint)':'var(--line)')+';border-radius:8px;padding:8px;margin-bottom:7px';
+    const tm=el('div','',t.time); tm.style.cssText='font-size:16px;font-weight:800;color:var(--mint-ink);text-align:center;border-radius:6px;padding:7px 2px;'+(t.main?'background:var(--mint-bg)':'background:var(--bg)');
+    const le=inp(t,'len',{sm:true}); le.style.width='100%'; le.addEventListener('blur',render);
+    const mid=el('div'); mid.style.cssText='display:flex;flex-direction:column;gap:4px;min-width:0';
+    const na=inp(t,'title'); na.placeholder='프로그램명'; na.style.width='100%';
+    const de=inp(t,'desc'); de.placeholder='설명(선택)'; de.style.cssText='width:100%;font-size:13px;color:var(--sub)';
+    const mt=el('label'); mt.style.cssText='display:flex;align-items:center;gap:4px;font-size:12px;color:var(--sub);cursor:pointer';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!t.main; cb.addEventListener('change',()=>{t.main=cb.checked;render();});
+    mt.appendChild(cb); mt.appendChild(document.createTextNode('본행사'));
+    mid.appendChild(na); mid.appendChild(de); mid.appendChild(mt);
+    const tools=el('div','e-row-tools'); tools.style.cssText='display:flex;gap:3px;justify-content:flex-end'; tools.appendChild(upBtn(s.timeline,i)); tools.appendChild(delBtn(s.timeline,i,'"'+t.title+'"'));
+    row.appendChild(tm); row.appendChild(le); row.appendChild(mid); row.appendChild(tools);
     panel.appendChild(row);
   });
-  if (editing()) panel.appendChild(addBtn('타임라인 항목 추가', ()=> s.timeline.push({time:'00:00', len:'10분', title:'새 항목', desc:'', main:false})));
+  panel.appendChild(addBtn('프로그램 추가', ()=>{ s.timeline.push({time:'00:00',len:'10분',title:'',desc:'',main:false}); computeTimes(s.timeline); }));
   box.appendChild(panel);
+}
+function tlEditB(s,box){
+  const panel=el('div','panel');
+  s.timeline.forEach((t,i)=>{
+    const row=el('div'); row.style.cssText='display:flex;gap:11px;align-items:stretch;margin-bottom:9px';
+    const tcol=el('div'); tcol.style.cssText='flex:0 0 62px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;padding:6px 3px;'+(t.main?'background:var(--mint-bg);border:1px solid var(--mint)':'background:var(--bg);border:1px solid var(--line)');
+    const tm=el('div','',t.time); tm.style.cssText='font-size:16px;font-weight:800;color:var(--mint-ink)';
+    const lc=inp(t,'len',{sm:true}); lc.style.cssText='width:54px;text-align:center;font-size:11px;border:none;background:transparent;color:var(--sub);padding:2px 0'; lc.addEventListener('blur',render);
+    tcol.appendChild(tm); tcol.appendChild(lc);
+    const card=el('div'); card.style.cssText='flex:1;min-width:0;background:var(--surface);border:1px solid '+(t.main?'var(--mint)':'var(--line)')+';border-radius:8px;padding:9px 11px';
+    const na=inp(t,'title'); na.placeholder='프로그램명'; na.style.cssText='width:100%;font-weight:700;margin-bottom:5px';
+    const de=inp(t,'desc'); de.placeholder='설명(선택)'; de.style.cssText='width:100%;font-size:13px;color:var(--sub)';
+    const foot=el('div'); foot.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-top:7px';
+    const mt=el('label'); mt.style.cssText='display:flex;align-items:center;gap:4px;font-size:12px;color:var(--sub);cursor:pointer';
+    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!t.main; cb.addEventListener('change',()=>{t.main=cb.checked;render();});
+    mt.appendChild(cb); mt.appendChild(document.createTextNode('본행사'));
+    const tools=el('div','e-row-tools'); tools.appendChild(upBtn(s.timeline,i)); tools.appendChild(delBtn(s.timeline,i,'"'+t.title+'"'));
+    foot.appendChild(mt); foot.appendChild(tools);
+    card.appendChild(na); card.appendChild(de); card.appendChild(foot);
+    row.appendChild(tcol); row.appendChild(card); panel.appendChild(row);
+  });
+  panel.appendChild(addBtn('프로그램 추가', ()=>{ s.timeline.push({time:'00:00',len:'10분',title:'',desc:'',main:false}); computeTimes(s.timeline); }));
+  box.appendChild(panel);
+}
+function renderTimeline(){
+  const s=cur(); const box=el('div');
+  box.appendChild(pageHead('당일 타임라인', editing()
+    ? '시작 시간 + 각 프로그램 길이만 입력하면 시간은 자동 계산돼요'
+    : '시간이 붉은 항목이 본행사 큐시트 · 밀리면 패널토크 축소가 1순위 조정안'));
+  if(!editing()){ tlView(s,box); return box; }
+  computeTimes(s.timeline);
+  box.appendChild(tlStyleToggle());
+  box.appendChild(tlStartControl(s));
+  if(tlStyle==='B') tlEditB(s,box); else tlEditA(s,box);
   return box;
 }
 
