@@ -1132,31 +1132,6 @@ function parseMin(t){ const m=String(t||'').match(/(\d{1,2}):(\d{2})/); return m
 function parseLen(l){ const m=String(l||'').match(/(\d+)/); return m ? +m[1] : 0; }
 function fmtMin(x){ x=((x%1440)+1440)%1440; return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0'); }
 function computeTimes(tl){ if(!tl||!tl.length) return; let c=parseMin(tl[0].time); if(c==null) c=900; tl.forEach(it=>{ it.time=fmtMin(c); c+=parseLen(it.len); }); }
-let tlStyle=(function(){ try{ return localStorage.getItem('tl-style')||'A'; }catch(e){ return 'A'; } })();
-function tlStyleToggle(){
-  const row=el('div'); row.style.cssText='display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px';
-  const wrap=el('div'); wrap.style.cssText='display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden';
-  [['A','표 형식'],['B','레일 카드']].forEach(([k,lab])=>{
-    const b=el('button','',lab); const on=tlStyle===k;
-    b.style.cssText='border:none;cursor:pointer;padding:7px 16px;font-size:13px;font-weight:700;'+(on?'background:var(--mint-bg);color:var(--mint-ink)':'background:var(--surface);color:var(--sub)');
-    b.addEventListener('click',()=>{ tlStyle=k; try{localStorage.setItem('tl-style',k);}catch(e){} render(); });
-    wrap.appendChild(b);
-  });
-  const cap=el('span','','← 편집 스타일 두 가지 비교용 (마음에 드는 걸로 알려줘)'); cap.style.cssText='font-size:12px;color:var(--sub)';
-  row.appendChild(wrap); row.appendChild(cap);
-  return row;
-}
-function tlStartControl(s){
-  const ctl=el('div'); ctl.style.cssText='display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap';
-  const lab=el('span','','시작 시간'); lab.style.cssText='font-size:13px;font-weight:700;color:var(--ink)';
-  const st=document.createElement('input'); st.className='e-in sm'; st.value=s.timeline[0]?s.timeline[0].time:'15:00';
-  st.style.cssText='width:84px;font-size:16px;font-weight:800;color:var(--mint-ink)';
-  st.addEventListener('input',()=>{ if(s.timeline[0]) s.timeline[0].time=st.value; });
-  st.addEventListener('blur',render);
-  const hint=el('span','','길이를 바꾸면 뒤 시간이 자동으로 밀려요'); hint.style.cssText='font-size:12px;color:var(--sub)';
-  ctl.appendChild(lab); ctl.appendChild(st); ctl.appendChild(hint);
-  return ctl;
-}
 function tlView(s,box){
   const panel=el('div','panel');
   s.timeline.forEach(t=>{
@@ -1169,38 +1144,28 @@ function tlView(s,box){
   });
   box.appendChild(panel);
 }
-function tlEditA(s,box){
-  const panel=el('div','panel');
-  const G='display:grid;grid-template-columns:70px 56px 1fr 56px;gap:7px;align-items:start';
-  const head=el('div'); head.style.cssText=G+';padding:0 2px 7px;font-size:11px;color:var(--sub);font-weight:700;align-items:center';
-  ['시간','길이','프로그램 / 설명',''].forEach(h=>head.appendChild(el('span','',h)));
-  panel.appendChild(head);
-  s.timeline.forEach((t,i)=>{
-    const row=el('div'); row.style.cssText=G+';background:var(--surface);border:1px solid '+(t.main?'var(--mint)':'var(--line)')+';border-radius:8px;padding:8px;margin-bottom:7px';
-    const tm=el('div','',t.time); tm.style.cssText='font-size:16px;font-weight:800;color:var(--mint-ink);text-align:center;border-radius:6px;padding:7px 2px;'+(t.main?'background:var(--mint-bg)':'background:var(--bg)');
-    const le=inp(t,'len',{sm:true}); le.style.width='100%'; le.addEventListener('blur',render);
-    const mid=el('div'); mid.style.cssText='display:flex;flex-direction:column;gap:4px;min-width:0';
-    const na=inp(t,'title'); na.placeholder='프로그램명'; na.style.width='100%';
-    const de=inp(t,'desc'); de.placeholder='설명(선택)'; de.style.cssText='width:100%;font-size:13px;color:var(--sub)';
-    const mt=el('label'); mt.style.cssText='display:flex;align-items:center;gap:4px;font-size:12px;color:var(--sub);cursor:pointer';
-    const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!t.main; cb.addEventListener('change',()=>{t.main=cb.checked;render();});
-    mt.appendChild(cb); mt.appendChild(document.createTextNode('본행사'));
-    mid.appendChild(na); mid.appendChild(de); mid.appendChild(mt);
-    const tools=el('div','e-row-tools'); tools.style.cssText='display:flex;gap:3px;justify-content:flex-end'; tools.appendChild(upBtn(s.timeline,i)); tools.appendChild(delBtn(s.timeline,i,'"'+t.title+'"'));
-    row.appendChild(tm); row.appendChild(le); row.appendChild(mid); row.appendChild(tools);
-    panel.appendChild(row);
-  });
-  panel.appendChild(addBtn('프로그램 추가', ()=>{ s.timeline.push({time:'00:00',len:'10분',title:'',desc:'',main:false}); computeTimes(s.timeline); }));
-  box.appendChild(panel);
-}
-function tlEditB(s,box){
+function renderTimeline(){
+  const s=cur(); const box=el('div');
+  box.appendChild(pageHead('당일 타임라인', editing()
+    ? '시간을 직접 입력하거나, 길이만 채운 뒤 ‘시간 자동 계산’을 누르세요'
+    : '시간이 붉은 항목이 본행사 큐시트 · 밀리면 패널토크 축소가 1순위 조정안'));
+  if(!editing()){ tlView(s,box); return box; }
+
+  const bar=el('div'); bar.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap';
+  const auto=el('button','add-btn','↻ 길이로 시간 자동 계산'); auto.style.margin='0';
+  auto.addEventListener('click',()=>{ computeTimes(s.timeline); render(); });
+  const hint=el('span','','시간 칸에 직접 입력 OK · 길이만 채우고 이 버튼을 눌러도 자동으로 채워져요'); hint.style.cssText='font-size:12px;color:var(--sub)';
+  bar.appendChild(auto); bar.appendChild(hint);
+  box.appendChild(bar);
+
   const panel=el('div','panel');
   s.timeline.forEach((t,i)=>{
     const row=el('div'); row.style.cssText='display:flex;gap:11px;align-items:stretch;margin-bottom:9px';
-    const tcol=el('div'); tcol.style.cssText='flex:0 0 62px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:8px;padding:6px 3px;'+(t.main?'background:var(--mint-bg);border:1px solid var(--mint)':'background:var(--bg);border:1px solid var(--line)');
-    const tm=el('div','',t.time); tm.style.cssText='font-size:16px;font-weight:800;color:var(--mint-ink)';
-    const lc=inp(t,'len',{sm:true}); lc.style.cssText='width:54px;text-align:center;font-size:11px;border:none;background:transparent;color:var(--sub);padding:2px 0'; lc.addEventListener('blur',render);
-    tcol.appendChild(tm); tcol.appendChild(lc);
+    const tcol=el('div'); tcol.style.cssText='flex:0 0 70px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:8px;padding:8px 4px;'+(t.main?'background:var(--mint-bg);border:1px solid var(--mint)':'background:var(--bg);border:1px solid var(--line)');
+    const tm=inp(t,'time',{sm:true}); tm.placeholder='00:00'; tm.style.cssText='width:100%;text-align:center;font-size:15px;font-weight:800;color:var(--mint-ink);border:1px solid var(--line-strong);border-radius:6px;padding:5px 2px;background:var(--surface)';
+    const llab=el('span','','길이'); llab.style.cssText='font-size:10px;color:var(--sub)';
+    const lc=inp(t,'len',{sm:true}); lc.placeholder='10분'; lc.style.cssText='width:100%;text-align:center;font-size:12px;border:1px solid var(--line);border-radius:6px;padding:4px 2px;color:var(--body)';
+    tcol.appendChild(tm); tcol.appendChild(llab); tcol.appendChild(lc);
     const card=el('div'); card.style.cssText='flex:1;min-width:0;background:var(--surface);border:1px solid '+(t.main?'var(--mint)':'var(--line)')+';border-radius:8px;padding:9px 11px';
     const na=inp(t,'title'); na.placeholder='프로그램명'; na.style.cssText='width:100%;font-weight:700;margin-bottom:5px';
     const de=inp(t,'desc'); de.placeholder='설명(선택)'; de.style.cssText='width:100%;font-size:13px;color:var(--sub)';
@@ -1213,20 +1178,8 @@ function tlEditB(s,box){
     card.appendChild(na); card.appendChild(de); card.appendChild(foot);
     row.appendChild(tcol); row.appendChild(card); panel.appendChild(row);
   });
-  panel.appendChild(addBtn('프로그램 추가', ()=>{ s.timeline.push({time:'00:00',len:'10분',title:'',desc:'',main:false}); computeTimes(s.timeline); }));
-  box.appendChild(panel);
-}
-function renderTimeline(){
-  const s=cur(); const box=el('div');
-  box.appendChild(pageHead('당일 타임라인', editing()
-    ? '시작 시간 + 각 프로그램 길이만 입력하면 시간은 자동 계산돼요'
-    : '시간이 붉은 항목이 본행사 큐시트 · 밀리면 패널토크 축소가 1순위 조정안'));
-  if(!editing()){ tlView(s,box); return box; }
-  computeTimes(s.timeline);
-  box.appendChild(tlStyleToggle());
-  box.appendChild(tlStartControl(s));
-  if(tlStyle==='B') tlEditB(s,box); else tlEditA(s,box);
-  return box;
+  panel.appendChild(addBtn('프로그램 추가', ()=> s.timeline.push({time:'',len:'10분',title:'',desc:'',main:false})));
+  box.appendChild(panel); return box;
 }
 
 const STATUS = ['준비중','진행중','확정'];
