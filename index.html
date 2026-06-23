@@ -1134,28 +1134,25 @@ function fmtMin(x){ x=((x%1440)+1440)%1440; return String(Math.floor(x/60)).padS
 function computeTimes(tl){ if(!tl||!tl.length) return; let c=parseMin(tl[0].time); if(c==null) c=900; tl.forEach(it=>{ it.time=fmtMin(c); c+=parseLen(it.len); }); }
 function tlView(s,box){
   const tl=s.timeline||[];
-  const lens=tl.map(t=>parseLen(t.len)||0);
-  const total=lens.reduce((a,b)=>a+b,0)||1;
-  const sm=parseMin(tl[0]&&tl[0].time); const base=(sm==null?900:sm);
   const panel=el('div','panel');
-  const lane=el('div'); lane.style.cssText='display:flex;align-items:stretch;width:100%;height:66px;border-radius:8px;overflow:hidden;border:1px solid var(--line)';
-  tl.forEach((t,i)=>{
-    const seg=el('div');
-    seg.style.cssText='flex:'+(lens[i]||0.4)+' 1 0;min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px 3px;border-right:'+(i<tl.length-1?'1px solid var(--line)':'none')+';'+(t.main?'background:var(--mint-bg)':'background:var(--bg)');
-    seg.title=(t.time||'')+'  '+(t.title||'')+'  ('+(t.len||'')+')'+(t.desc?'\n'+t.desc:'');
-    const tt=el('div','',t.time||''); tt.style.cssText='font-size:9.5px;line-height:1.2;white-space:nowrap;color:'+(t.main?'var(--mint-ink)':'var(--sub)');
-    const nm=el('div','',t.title||''); nm.style.cssText='font-size:12px;font-weight:'+(t.main?'700':'500')+';color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.25;text-align:center';
-    seg.appendChild(tt); seg.appendChild(nm); lane.appendChild(seg);
+  const scroller=el('div'); scroller.style.cssText='overflow-x:auto;padding-bottom:6px';
+  const rail=el('div'); rail.style.cssText='display:flex;align-items:flex-start;gap:8px;position:relative;width:max-content;padding-top:28px';
+  const line=el('div'); line.style.cssText='position:absolute;left:10px;right:10px;top:34px;height:2px;background:var(--line-strong)';
+  rail.appendChild(line);
+  tl.forEach(t=>{
+    const col=el('div'); col.style.cssText='flex:0 0 auto;width:120px;display:flex;flex-direction:column;align-items:center';
+    const tm=el('div','',t.time||''); tm.style.cssText='font-size:11px;font-weight:700;white-space:nowrap;color:'+(t.main?'var(--mint-ink)':'var(--sub)');
+    const dot=el('div'); dot.style.cssText='border-radius:50%;margin:5px 0;z-index:1;border:2px solid var(--surface);'+(t.main?'width:12px;height:12px;background:var(--mint)':'width:9px;height:9px;background:var(--line-strong)');
+    const card=el('div'); card.style.cssText='width:100%;box-sizing:border-box;background:'+(t.main?'var(--mint-bg)':'var(--surface)')+';border:1px solid '+(t.main?'var(--mint)':'var(--line)')+';border-radius:8px;padding:9px 8px;text-align:center;min-height:54px;display:flex;flex-direction:column;justify-content:center;gap:3px';
+    const nm=el('div','',t.title||''); nm.style.cssText='font-size:12.5px;font-weight:'+(t.main?'700':'500')+';color:var(--ink);line-height:1.3;word-break:keep-all';
+    card.appendChild(nm);
+    if(t.len){ const ln=el('div','',t.len); ln.style.cssText='font-size:10.5px;color:'+(t.main?'var(--mint-ink)':'var(--sub)'); card.appendChild(ln); }
+    col.appendChild(tm); col.appendChild(dot); col.appendChild(card);
+    rail.appendChild(col);
   });
-  panel.appendChild(lane);
-  const axis=el('div'); axis.style.cssText='position:relative;height:16px;margin-top:5px';
-  const endM=base+total;
-  for(let h=Math.ceil(base/60)*60; h<=endM+0.1; h+=60){
-    const left=((h-base)/total)*100;
-    const tick=el('div','',fmtMin(h)); tick.style.cssText='position:absolute;top:0;left:'+left+'%;transform:translateX(-50%);font-size:10px;color:var(--sub);white-space:nowrap';
-    axis.appendChild(tick);
-  }
-  panel.appendChild(axis);
+  scroller.appendChild(rail); panel.appendChild(scroller);
+  const hint=el('div','','← 좌우로 넘기면 전체 일정'); hint.style.cssText='font-size:11px;color:var(--sub);margin-top:6px';
+  panel.appendChild(hint);
   box.appendChild(panel);
 }
 function renderTimeline(){
