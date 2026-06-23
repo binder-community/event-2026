@@ -1133,15 +1133,29 @@ function parseLen(l){ const m=String(l||'').match(/(\d+)/); return m ? +m[1] : 0
 function fmtMin(x){ x=((x%1440)+1440)%1440; return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0'); }
 function computeTimes(tl){ if(!tl||!tl.length) return; let c=parseMin(tl[0].time); if(c==null) c=900; tl.forEach(it=>{ it.time=fmtMin(c); c+=parseLen(it.len); }); }
 function tlView(s,box){
+  const tl=s.timeline||[];
+  const lens=tl.map(t=>parseLen(t.len)||0);
+  const total=lens.reduce((a,b)=>a+b,0)||1;
+  const sm=parseMin(tl[0]&&tl[0].time); const base=(sm==null?900:sm);
   const panel=el('div','panel');
-  s.timeline.forEach(t=>{
-    const row=el('div','tl-item'+(t.main?' main':''));
-    row.appendChild(el('div','tl-time',t.time));
-    const body=el('div','tl-body');
-    const title=el('div','t',t.title); title.appendChild(el('span','len',t.len)); body.appendChild(title);
-    if(t.desc) body.appendChild(el('div','d',t.desc));
-    row.appendChild(body); panel.appendChild(row);
+  const lane=el('div'); lane.style.cssText='display:flex;align-items:stretch;width:100%;height:66px;border-radius:8px;overflow:hidden;border:1px solid var(--line)';
+  tl.forEach((t,i)=>{
+    const seg=el('div');
+    seg.style.cssText='flex:'+(lens[i]||0.4)+' 1 0;min-width:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px 3px;border-right:'+(i<tl.length-1?'1px solid var(--line)':'none')+';'+(t.main?'background:var(--mint-bg)':'background:var(--bg)');
+    seg.title=(t.time||'')+'  '+(t.title||'')+'  ('+(t.len||'')+')'+(t.desc?'\n'+t.desc:'');
+    const tt=el('div','',t.time||''); tt.style.cssText='font-size:9.5px;line-height:1.2;white-space:nowrap;color:'+(t.main?'var(--mint-ink)':'var(--sub)');
+    const nm=el('div','',t.title||''); nm.style.cssText='font-size:12px;font-weight:'+(t.main?'700':'500')+';color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.25;text-align:center';
+    seg.appendChild(tt); seg.appendChild(nm); lane.appendChild(seg);
   });
+  panel.appendChild(lane);
+  const axis=el('div'); axis.style.cssText='position:relative;height:16px;margin-top:5px';
+  const endM=base+total;
+  for(let h=Math.ceil(base/60)*60; h<=endM+0.1; h+=60){
+    const left=((h-base)/total)*100;
+    const tick=el('div','',fmtMin(h)); tick.style.cssText='position:absolute;top:0;left:'+left+'%;transform:translateX(-50%);font-size:10px;color:var(--sub);white-space:nowrap';
+    axis.appendChild(tick);
+  }
+  panel.appendChild(axis);
   box.appendChild(panel);
 }
 function renderTimeline(){
