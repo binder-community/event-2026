@@ -1136,13 +1136,13 @@ function tlView(s,box){
   const tl=s.timeline||[];
   const panel=el('div','panel');
   const scroller=el('div'); scroller.style.cssText='overflow-x:auto;padding-bottom:6px';
-  const rail=el('div'); rail.style.cssText='display:flex;align-items:flex-start;gap:8px;position:relative;width:max-content;padding-top:28px';
-  const line=el('div'); line.style.cssText='position:absolute;left:10px;right:10px;top:34px;height:2px;background:var(--line-strong)';
+  const rail=el('div'); rail.style.cssText='display:flex;align-items:flex-start;gap:8px;position:relative;width:max-content;padding-top:2px';
+  const line=el('div'); line.style.cssText='position:absolute;left:10px;right:10px;top:32px;height:2px;background:var(--line-strong);z-index:0';
   rail.appendChild(line);
   tl.forEach(t=>{
     const col=el('div'); col.style.cssText='flex:0 0 auto;width:120px;display:flex;flex-direction:column;align-items:center';
-    const tm=el('div','',t.time||''); tm.style.cssText='font-size:11px;font-weight:700;white-space:nowrap;color:'+(t.main?'var(--mint-ink)':'var(--sub)');
-    const dot=el('div'); dot.style.cssText='border-radius:50%;margin:5px 0;z-index:1;border:2px solid var(--surface);'+(t.main?'width:12px;height:12px;background:var(--mint)':'width:9px;height:9px;background:var(--line-strong)');
+    const tm=el('div','',t.time||''); tm.style.cssText='font-size:11px;font-weight:700;white-space:nowrap;height:18px;line-height:18px;color:'+(t.main?'var(--mint-ink)':'var(--sub)');
+    const dot=el('div'); dot.style.cssText='border-radius:50%;margin:6px 0 10px;z-index:1;border:2px solid var(--surface);'+(t.main?'width:12px;height:12px;background:var(--mint)':'width:10px;height:10px;background:var(--line-strong)');
     const card=el('div'); card.style.cssText='width:100%;box-sizing:border-box;background:'+(t.main?'var(--mint-bg)':'var(--surface)')+';border:1px solid '+(t.main?'var(--mint)':'var(--line)')+';border-radius:8px;padding:9px 8px;text-align:center;min-height:54px;display:flex;flex-direction:column;justify-content:center;gap:3px';
     const nm=el('div','',t.title||''); nm.style.cssText='font-size:12.5px;font-weight:'+(t.main?'700':'500')+';color:var(--ink);line-height:1.3;word-break:keep-all';
     card.appendChild(nm);
