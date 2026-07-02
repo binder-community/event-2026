@@ -243,12 +243,12 @@
   .rule-list li .v{flex:1}
 
   /* 댓글 */
-  .cm-item{display:flex;gap:10px;padding:11px 2px;border-bottom:1px solid var(--line);align-items:flex-start}
+  .cm-item{display:flex;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line);align-items:flex-start}
   .cm-item:last-child{border-bottom:none}
   .cm-body{flex:1;min-width:0}
-  .cm-head{font-size:13px;color:var(--sub)}
-  .cm-head b{color:var(--ink);font-size:13.5px;font-weight:600}
-  .cm-text{font-size:15px;color:var(--body);white-space:pre-wrap;word-break:break-word}
+  .cm-head{font-size:11.5px;color:var(--sub);margin-bottom:2px}
+  .cm-head b{color:var(--ink);font-size:12px;font-weight:700}
+  .cm-text{font-size:13px;line-height:1.5;color:var(--body);white-space:pre-wrap;word-break:break-word}
   .cm-empty{font-size:14px;color:var(--sub);padding:4px 2px}
   .cm-form{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
   .cm-form .name{flex:0 0 84px}
@@ -2011,9 +2011,9 @@ function renderComments(section){
     head.appendChild(el('b','', g.name));
     head.appendChild(document.createTextNode(' · ' + fmtTs(g.items[0].ts)));
     body.appendChild(head);
-    g.items.forEach(c=>{
+    g.items.forEach((c,li)=>{
       const line = el('div');
-      line.style.cssText = 'display:flex;align-items:baseline;gap:6px';
+      line.style.cssText = 'display:flex;align-items:baseline;gap:6px' + (li>0?';margin-top:3px':'');
       const tx = el('div','cm-text', c.text); tx.style.flex = '1';
       line.appendChild(tx);
       if (editing()){   /* 삭제는 수정 모드에서만 — 평소엔 실수로 못 지움 */
