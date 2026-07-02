@@ -979,9 +979,7 @@ const NAV = [
   ]},
   { title:'준비 · 운영', items:[
     { id:'roadmap', label:'준비 로드맵' },
-    { id:'recruit', label:'참가자·모집' },
-    { id:'budget',  label:'예산' },
-    { id:'resources', label:'자료' }
+    { id:'budget',  label:'예산' }
   ]},
   { title:'기록', items:[
     { id:'decisions', label:'결정 로그' }
@@ -1440,7 +1438,7 @@ function renderSheet(){
   let lastMain = -1; tl.forEach((t,i)=>{ if(t.main) lastMain=i; });
   const phases = (firstMain<0)
     ? [['진행 순서', tl]]
-    : [['① 입장 · 대기', tl.slice(0, firstMain)], ['② 본 세션', tl.slice(firstMain, lastMain+1)], ['③ 마무리 · 사이드', tl.slice(lastMain+1)]];
+    : [['① 입장 · 플리마켓', tl.slice(0, firstMain)], ['② 본 세션', tl.slice(firstMain, lastMain+1)], ['③ 마무리 · 사이드', tl.slice(lastMain+1)]];
   const NAMES=['도영','예지','수연','희경','훈평','소정','운영진','멤버','전원'];
   const SPECIFIC=['수연','희경','훈평','소정'];
   const KW=['오프닝','세션','강연','패널','토크','Q&A','슬라이드','굿즈','블라인드','플리마켓','입장','대기','네트워킹','클로징','쿼터','발제','전시','소개','세팅','정리','교류'];
@@ -1466,7 +1464,7 @@ function renderSheet(){
     if(!t.desc && !cts.length){ const e=el('div','','추가 정보 없음'); e.style.cssText='font-size:12.5px;color:var(--sub)'; d.appendChild(e); }
     return d;
   }
-  phases.forEach(([label, items])=>{
+  phases.forEach(([label, items], pIdx)=>{
     if(!items.length) return;
     const lb=el('div','',label); lb.style.cssText='font-size:11px;font-weight:800;letter-spacing:.16em;color:var(--mint-ink);margin:24px 0 10px';
     box.appendChild(lb);
@@ -1485,6 +1483,9 @@ function renderSheet(){
       card.addEventListener('click', ()=>{ openCards[key]=!openC; render(); });
       box.appendChild(card);
       if(openC) box.appendChild(cardDetail(t));
+    });
+    if (pIdx===0) foldable('flea','블라인드북 플리마켓', (s.flea||[]).length, (panel)=>{
+      const ul=el('ul','rule-list'); (s.flea||[]).forEach(f=>{ const li=el('li'); li.appendChild(el('span','v',f)); ul.appendChild(li); }); panel.appendChild(ul);
     });
   });
 
@@ -1508,9 +1509,6 @@ function renderSheet(){
     const body=el('tbody');
     extraContents.forEach(c=>{ const tr=el('tr'); const td1=el('td','',c.name); td1.style.cssText='font-weight:700;color:var(--ink);word-break:keep-all'; const td2=el('td','note-cell',c.prep||''); const td3=el('td','',c.owner||''); if((c.owner||'').includes('미정')) td3.style.color='var(--pend)'; td3.style.whiteSpace='nowrap'; const td4=el('td'); td4.appendChild(el('span','badge s'+(c.status||0),STATUS[c.status||0])); tr.appendChild(td1);tr.appendChild(td2);tr.appendChild(td3);tr.appendChild(td4); body.appendChild(tr); });
     tb.appendChild(body); panel.appendChild(tb);
-  });
-  foldable('flea','블라인드북 플리마켓', (s.flea||[]).length, (panel)=>{
-    const ul=el('ul','rule-list'); (s.flea||[]).forEach(f=>{ const li=el('li'); li.appendChild(el('span','v',f)); ul.appendChild(li); }); panel.appendChild(ul);
   });
   foldable('roles','역할 분담', s.roles.length, (panel)=>{
     const tb=el('table'); const thead=el('thead'); const hr=el('tr'); ['역할','담당','메모'].forEach(h=>hr.appendChild(el('th','',h))); thead.appendChild(hr); tb.appendChild(thead); const body=el('tbody');
