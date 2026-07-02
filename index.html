@@ -1963,21 +1963,35 @@ function renderComments(section){
   if (!list.length){
     panel.appendChild(el('div','cm-empty', editing() ? '댓글 없음.' : '아직 댓글이 없어요. 이 화면에 대한 의견을 남겨보세요.'));
   }
+  /* 연속 + 같은 이름 = 한 묶음 (카톡처럼) */
+  const groups = [];
   list.forEach(c=>{
+    const nm = c.name || '익명';
+    const g = groups[groups.length-1];
+    if (g && g.name === nm) g.items.push(c);
+    else groups.push({name:nm, items:[c]});
+  });
+  groups.forEach(g=>{
     const row = el('div','cm-item');
     const body = el('div','cm-body');
     const head = el('div','cm-head');
-    head.appendChild(el('b','', c.name || '익명'));
-    head.appendChild(document.createTextNode(' · ' + fmtTs(c.ts)));
+    head.appendChild(el('b','', g.name));
+    head.appendChild(document.createTextNode(' · ' + fmtTs(g.items[0].ts)));
     body.appendChild(head);
-    body.appendChild(el('div','cm-text', c.text));
+    g.items.forEach(c=>{
+      const line = el('div');
+      line.style.cssText = 'display:flex;align-items:baseline;gap:6px';
+      const tx = el('div','cm-text', c.text); tx.style.flex = '1';
+      line.appendChild(tx);
+      if (editing()){   /* 삭제는 수정 모드에서만 — 평소엔 실수로 못 지움 */
+        const del = el('button','tool-btn del','✕');
+        del.title = '이 줄 삭제';
+        del.addEventListener('click', (e)=>{ e.stopPropagation(); delComment(section, c.key, g.name); });
+        line.appendChild(del);
+      }
+      body.appendChild(line);
+    });
     row.appendChild(body);
-    if (editing()){   /* 삭제는 수정 모드에서만 — 평소엔 실수로 못 지움 */
-      const del = el('button','tool-btn del','✕');
-      del.title = '삭제';
-      del.addEventListener('click', ()=> delComment(section, c.key, c.name || '익명'));
-      row.appendChild(del);
-    }
     panel.appendChild(row);
   });
 
