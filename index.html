@@ -1115,34 +1115,51 @@ function renderHome(){
   const box = el('div');
 
   if (editing()){
-    box.appendChild(pageHead('개요', '행사 기본 정보 + 기획 개요 + 공간 수정'));
-    const panel = el('div','panel');
-    const grid = el('div','form-grid');
-    const fields = [
-      ['윗줄 문구','eyebrow'], ['행사명','title'], ['부제','subtitle'],
-      ['날짜 표기','dateLabel'], ['시간 표기','time'], ['행사일(D-day용)','date'],
-      ['장소','venue'], ['주소','venueAddr'], ['참가비','fee'], ['규모','capacity']
-    ];
-    for (const [label,key] of fields){
-      grid.appendChild(el('span','e-label',label));
-      grid.appendChild(inp(m,key));
-    }
-    panel.appendChild(grid);
-    box.appendChild(panel);
-    planEditInto(box, s.plan);
-    const ep = el('div','panel');
-    ep.appendChild(el('div','panel-title','공간 사진 (URL) · 첫 번째 사진이 개요 히어로 배경'));
-    const photos = s.venuePhotos || (s.venuePhotos = []);
-    photos.forEach((url,idx)=>{
-      const row = el('div','e-line'); row.style.marginBottom='7px';
-      const t2 = document.createElement('input'); t2.className='e-in'; t2.value=url;
-      t2.addEventListener('input', ()=>{ photos[idx]=t2.value; });
-      row.appendChild(t2);
-      const tools = el('div','e-row-tools'); tools.appendChild(upBtn(photos,idx)); tools.appendChild(delBtn(photos,idx,'사진')); row.appendChild(tools);
-      ep.appendChild(row);
+    box.appendChild(pageHead('개요', '보이는 순서 그대로 수정 — 히어로 → 핵심 정보 → 왜 하나 → 누구를 위해 → O/S 컨셉'));
+    const p = s.plan || (s.plan = {});
+    function panelWith(title){ const pn=el('div','panel'); pn.appendChild(el('div','panel-title',title)); return pn; }
+
+    let pn = panelWith('히어로 문구');
+    let grid = el('div','form-grid');
+    [['윗줄 소개','eyebrow'],['행사명','title'],['부제','subtitle'],['날짜 표기','dateLabel'],['행사일 (D-day 계산용)','date']].forEach(([label,key])=>{ grid.appendChild(el('span','e-label',label)); grid.appendChild(inp(m,key)); });
+    pn.appendChild(grid); box.appendChild(pn);
+
+    pn = panelWith('핵심 정보 — 히어로 하단 4칸');
+    grid = el('div','form-grid');
+    [['시간 표기','time'],['장소','venue'],['참가비','fee'],['규모','capacity']].forEach(([label,key])=>{ grid.appendChild(el('span','e-label',label)); grid.appendChild(inp(m,key)); });
+    pn.appendChild(grid); box.appendChild(pn);
+
+    pn = panelWith('왜 하나');
+    (p.why||(p.why=[])).forEach((it,i)=>{
+      const row=el('div'); row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap';
+      const t2=inp(it,'t',{sm:true}); t2.placeholder='제목'; t2.style.flex='0 0 130px';
+      const d2=inp(it,'d'); d2.placeholder='설명'; d2.style.flex='1';
+      row.appendChild(t2); row.appendChild(d2);
+      row.appendChild(upBtn(p.why,i)); row.appendChild(delBtn(p.why,i,'항목'));
+      pn.appendChild(row);
     });
-    ep.appendChild(addBtn('사진 URL 추가', ()=> photos.push('')));
-    box.appendChild(ep);
+    pn.appendChild(addBtn('항목 추가', ()=>p.why.push({t:'',d:''})));
+    box.appendChild(pn);
+
+    pn = panelWith('누구를 위해');
+    (p.targets||(p.targets=[])).forEach((it,i)=>{
+      const row=el('div'); row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap';
+      const w=inp(it,'who',{sm:true}); w.placeholder='누구'; w.style.flex='0 0 160px';
+      const g=inp(it,'gain'); g.placeholder='얻는 것'; g.style.flex='1';
+      row.appendChild(w); row.appendChild(g);
+      row.appendChild(upBtn(p.targets,i)); row.appendChild(delBtn(p.targets,i,'타겟'));
+      pn.appendChild(row);
+    });
+    pn.appendChild(addBtn('타겟 추가', ()=>p.targets.push({who:'',gain:''})));
+    box.appendChild(pn);
+
+    pn = panelWith('O/S 컨셉 — 민트 강조 블록');
+    const ci = inp(p,'concept'); ci.style.width='100%';
+    pn.appendChild(ci); box.appendChild(pn);
+
+    const note = el('p','page-desc','당일 흐름·핵심 프로그램은 운영 시트에서, 배경·공간 사진과 주소는 공간 탭에서 수정해요.');
+    note.style.marginTop='2px';
+    box.appendChild(note);
     return box;
   }
 
@@ -1256,21 +1273,44 @@ function tlView(s,box){
   box.appendChild(panel);
 }
 function renderVenue(){
-  const s = cur(); const m = s.meta; const photos = s.venuePhotos || []; const box = el('div');
-  box.appendChild(pageHead('공간', editing() ? '주소 수정 · 사진은 개요 수정에서 관리' : '성수 서브젝티브 카페 (대관 공간)'));
+  const s = cur(); const m = s.meta; const photos = s.venuePhotos || (s.venuePhotos = []); const box = el('div');
+  box.appendChild(pageHead('공간', editing() ? '장소·주소·사진 수정 — 첫 번째 사진이 개요 히어로 배경이 돼요' : '성수 서브젝티브 카페 (대관 공간)'));
+
+  if (editing()){
+    const pn = el('div','panel');
+    pn.appendChild(el('div','panel-title','장소 · 주소'));
+    const grid = el('div','form-grid');
+    [['장소','venue'],['주소','venueAddr']].forEach(([label,key])=>{ grid.appendChild(el('span','e-label',label)); grid.appendChild(inp(m,key)); });
+    pn.appendChild(grid); box.appendChild(pn);
+
+    const ep = el('div','panel');
+    ep.appendChild(el('div','panel-title','사진 (URL) — 1번이 개요 히어로 배경'));
+    photos.forEach((url,idx)=>{
+      const row = el('div','e-line'); row.style.marginBottom='7px';
+      const num = el('span','', String(idx+1)); num.style.cssText='flex:0 0 18px;font-size:12px;font-weight:800;color:'+(idx===0?'var(--mint-ink)':'var(--sub)');
+      const t2 = document.createElement('input'); t2.className='e-in'; t2.value=url;
+      t2.addEventListener('input', ()=>{ photos[idx]=t2.value; });
+      row.appendChild(num); row.appendChild(t2);
+      const tools = el('div','e-row-tools'); tools.appendChild(upBtn(photos,idx)); tools.appendChild(delBtn(photos,idx,'사진')); row.appendChild(tools);
+      ep.appendChild(row);
+    });
+    ep.appendChild(addBtn('사진 URL 추가', ()=> photos.push('')));
+    box.appendChild(ep);
+    return box;
+  }
+
   const panel = el('div','panel'); const info = el('div','venue-info');
-  const l1 = el('div','venue-line'); l1.appendChild(el('span','k','장소'));
-  if (editing()){ const v=el('span','v'); v.appendChild(inp(m,'venue')); l1.appendChild(v); } else l1.appendChild(el('span','v', m.venue));
-  info.appendChild(l1);
+  const l1 = el('div','venue-line'); l1.appendChild(el('span','k','장소')); l1.appendChild(el('span','v', m.venue)); info.appendChild(l1);
   const l2 = el('div','venue-line'); l2.appendChild(el('span','k','주소'));
-  if (editing()){ const v=el('span','v'); v.appendChild(inp(m,'venueAddr')); l2.appendChild(v); }
-  else { const v=el('span','v'); v.appendChild(document.createTextNode((m.venueAddr||'')+'  ')); const map=el('a','maplink','지도 ↗'); map.href='https://map.naver.com/p/search/'+encodeURIComponent(m.venueAddr||m.venue); map.target='_blank'; map.rel='noopener'; v.appendChild(map); l2.appendChild(v); }
-  info.appendChild(l2); panel.appendChild(info); box.appendChild(panel);
-  if (!editing() && photos.length){
+  const v = el('span','v'); v.appendChild(document.createTextNode((m.venueAddr||'')+'  '));
+  const map = el('a','maplink','지도 ↗'); map.href='https://map.naver.com/p/search/'+encodeURIComponent(m.venueAddr||m.venue); map.target='_blank'; map.rel='noopener';
+  v.appendChild(map); l2.appendChild(v); info.appendChild(l2);
+  panel.appendChild(info); box.appendChild(panel);
+  if (photos.length){
     const grid = el('div','photo-grid');
     photos.forEach(url=>{ const a=el('a','photo'); a.href=url; a.target='_blank'; a.rel='noopener'; const img=document.createElement('img'); img.src=url; img.loading='lazy'; img.alt='공간 사진'; a.appendChild(img); grid.appendChild(a); });
     box.appendChild(grid);
-    const cap=el('p','page-desc','사진을 누르면 크게 볼 수 있어요 · 출처: objectivestudio.co.kr'); cap.style.marginTop='12px'; box.appendChild(cap);
+    const cap = el('p','page-desc','사진을 누르면 크게 볼 수 있어요 · 출처: objectivestudio.co.kr'); cap.style.marginTop='12px'; box.appendChild(cap);
   }
   return box;
 }
@@ -1285,24 +1325,28 @@ function renderSheet(){
     const bar=el('div'); bar.style.cssText='display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap';
     const auto=el('button','add-btn','↻ 길이로 시간 자동 계산'); auto.style.margin='0';
     auto.addEventListener('click',()=>{ computeTimes(s.timeline); render(); });
-    bar.appendChild(auto); box.appendChild(bar);
-    const panel=el('div','panel'); panel.appendChild(el('div','panel-title','당일 프로그램'));
+    const hint=el('span','','본행사 체크 = 민트 강조 · 순서가 곧 당일 흐름'); hint.style.cssText='font-size:12px;color:var(--sub)';
+    bar.appendChild(auto); bar.appendChild(hint); box.appendChild(bar);
+
+    const panel=el('div','panel');
+    panel.appendChild(el('div','panel-title','당일 프로그램'));
     s.timeline.forEach((t,idx)=>{
+      const on=!!t.main;
       const row=el('div'); row.style.cssText='display:flex;gap:11px;align-items:stretch;margin-bottom:9px';
-      const tcol=el('div'); tcol.style.cssText='flex:0 0 70px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:3px;padding:8px 4px;'+(t.main?'background:var(--mint-bg);border:1px solid var(--mint)':'background:var(--bg);border:1px solid var(--line)');
+      const tcol=el('div'); tcol.style.cssText='flex:0 0 70px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:3px;padding:8px 4px;'+(on?'background:var(--mint-bg);border:1px solid var(--mint)':'background:var(--bg);border:1px solid var(--line)');
       const tm=inp(t,'time',{sm:true}); tm.placeholder='00:00'; tm.style.cssText='width:100%;text-align:center;font-size:15px;font-weight:800;color:var(--mint-ink);border:1px solid var(--line-strong);border-radius:2px;padding:5px 2px;background:var(--surface)';
       const llab=el('span','','길이'); llab.style.cssText='font-size:10px;color:var(--sub)';
       const lc=inp(t,'len',{sm:true}); lc.placeholder='10분'; lc.style.cssText='width:100%;text-align:center;font-size:12px;border:1px solid var(--line);border-radius:2px;padding:4px 2px;color:var(--body)';
       tcol.appendChild(tm); tcol.appendChild(llab); tcol.appendChild(lc);
-      const card=el('div'); card.style.cssText='flex:1;min-width:0;background:var(--surface);border:1px solid '+(t.main?'var(--mint)':'var(--line)')+';border-radius:3px;padding:9px 11px';
+      const card=el('div'); card.style.cssText='flex:1;min-width:0;background:var(--surface);border:1px solid '+(on?'var(--mint)':'var(--line)')+';'+(on?'border-left:3px solid var(--mint-ink);':'')+'border-radius:3px;padding:9px 11px';
       const l1=el('div'); l1.style.cssText='display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap';
       const na=inp(t,'title'); na.placeholder='프로그램명'; na.style.cssText='flex:2;min-width:140px;font-weight:700';
       const ow=inp(t,'owner'); ow.placeholder='담당'; ow.style.cssText='flex:1;min-width:90px;font-size:13px';
       l1.appendChild(na); l1.appendChild(ow);
-      const de=inp(t,'desc'); de.placeholder='설명(선택)'; de.style.cssText='width:100%;font-size:13px;color:var(--sub)';
+      const de=inp(t,'desc'); de.placeholder='내용 (카드를 펼치면 보여요)'; de.style.cssText='width:100%;font-size:13px;color:var(--sub)';
       const foot=el('div'); foot.style.cssText='display:flex;justify-content:space-between;align-items:center;margin-top:7px';
       const mt=el('label'); mt.style.cssText='display:flex;align-items:center;gap:4px;font-size:12px;color:var(--sub);cursor:pointer';
-      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=!!t.main; cb.addEventListener('change',()=>{t.main=cb.checked;render();});
+      const cb=document.createElement('input'); cb.type='checkbox'; cb.checked=on; cb.addEventListener('change',()=>{t.main=cb.checked;render();});
       mt.appendChild(cb); mt.appendChild(document.createTextNode('본행사'));
       const tools=el('div','e-row-tools'); tools.appendChild(upBtn(s.timeline,idx)); tools.appendChild(delBtn(s.timeline,idx,'"'+t.title+'"'));
       foot.appendChild(mt); foot.appendChild(tools);
@@ -1312,21 +1356,22 @@ function renderSheet(){
     panel.appendChild(addBtn('프로그램 추가', ()=> s.timeline.push({time:'',len:'10분',title:'',desc:'',owner:'',main:false})));
     box.appendChild(panel);
 
-    const cp=el('div','panel'); cp.appendChild(el('div','panel-title','콘텐츠 · 준비 상태'));
+    const cp=el('div','panel');
+    cp.appendChild(el('div','panel-title','준비물 — 담당·키워드가 겹치는 프로그램 카드 아래 자동으로 붙어요'));
     s.contents.forEach((c,idx)=>{
       const item=el('div','ct-item'); const top=el('div','ct-top');
       const badge=el('span','badge s'+(c.status||0)+' clickable', STATUS[c.status||0]);
       badge.addEventListener('click', ()=>{ c.status=((c.status||0)+1)%3; render(); });
       const nameIn=inp(c,'name'); nameIn.style.flex='1'; nameIn.style.minWidth='160px';
       top.appendChild(nameIn); top.appendChild(badge);
-      const tools=el('div','e-row-tools'); tools.appendChild(delBtn(s.contents,idx,'콘텐츠 "'+c.name+'"')); top.appendChild(tools);
+      const tools=el('div','e-row-tools'); tools.appendChild(delBtn(s.contents,idx,'준비물 "'+c.name+'"')); top.appendChild(tools);
       item.appendChild(top);
       const meta=el('div','ct-meta');
       meta.appendChild(el('span','k','담당')); meta.appendChild(inp(c,'owner'));
       meta.appendChild(el('span','k','준비')); meta.appendChild(inp(c,'prep'));
       item.appendChild(meta); cp.appendChild(item);
     });
-    cp.appendChild(addBtn('콘텐츠 추가', ()=> s.contents.push({name:'새 콘텐츠', owner:'미정', prep:'', status:0})));
+    cp.appendChild(addBtn('준비물 추가', ()=> s.contents.push({name:'', owner:'미정', prep:'', status:0})));
     box.appendChild(cp);
 
     const fp=el('div','panel'); fp.appendChild(el('div','panel-title','블라인드북 플리마켓'));
@@ -1962,136 +2007,6 @@ function renderComments(section){
   form.appendChild(nameIn); form.appendChild(textIn); form.appendChild(btn);
   panel.appendChild(form);
   return panel;
-}
-
-function planSecHead(){
-  const h = el('div','', '기획 개요');
-  h.style.cssText='margin-top:32px;padding-top:22px;border-top:1px solid var(--line-strong);font-size:18px;font-weight:800;color:var(--ink);margin-bottom:14px';
-  return h;
-}
-function planEditInto(box, p){
-  if (!p) return;
-  box.appendChild(planSecHead());
-
-    let panel = el('div','panel');
-    panel.appendChild(el('div','panel-title','한 줄 정의'));
-    panel.appendChild(inp(p,'oneline'));
-    box.appendChild(panel);
-
-    panel = el('div','panel');
-    panel.appendChild(el('div','panel-title','왜 하는가'));
-    p.why.forEach((it,i)=>{
-      const row = el('div'); row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap';
-      const t = inp(it,'t',{sm:true}); t.style.flex='0 0 130px';
-      const d = inp(it,'d'); d.style.flex='1';
-      row.appendChild(t); row.appendChild(d);
-      row.appendChild(upBtn(p.why,i)); row.appendChild(delBtn(p.why,i,'항목'));
-      panel.appendChild(row);
-    });
-    panel.appendChild(addBtn('목적 추가', ()=>p.why.push({t:'',d:''})));
-    box.appendChild(panel);
-
-    panel = el('div','panel');
-    panel.appendChild(el('div','panel-title','타겟 — 3유형'));
-    p.targets.forEach((it,i)=>{
-      const row = el('div'); row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap';
-      const w = inp(it,'who',{sm:true}); w.style.flex='0 0 150px';
-      const g = inp(it,'gain'); g.style.flex='1';
-      row.appendChild(w); row.appendChild(g);
-      row.appendChild(upBtn(p.targets,i)); row.appendChild(delBtn(p.targets,i,'타겟'));
-      panel.appendChild(row);
-    });
-    panel.appendChild(addBtn('타겟 추가', ()=>p.targets.push({who:'',gain:''})));
-    box.appendChild(panel);
-
-    panel = el('div','panel');
-    panel.appendChild(el('div','panel-title','왜 우리 얘기를 들어야 하나'));
-    p.edge.forEach((_,i)=>{
-      const row = el('div'); row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px';
-      const t = inp(p.edge,i); t.style.flex='1';
-      row.appendChild(t); row.appendChild(upBtn(p.edge,i)); row.appendChild(delBtn(p.edge,i,'항목'));
-      panel.appendChild(row);
-    });
-    panel.appendChild(addBtn('항목 추가', ()=>p.edge.push('')));
-    box.appendChild(panel);
-
-    panel = el('div','panel');
-    panel.appendChild(el('div','panel-title','핵심 컨셉'));
-    panel.appendChild(inp(p,'concept'));
-    box.appendChild(panel);
-
-    panel = el('div','panel');
-    panel.appendChild(el('div','panel-title','기대효과 / 성공 지표'));
-    p.kpi.forEach((it,i)=>{
-      const row = el('div'); row.style.cssText='display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap';
-      const l = inp(it,'label'); l.style.flex='1';
-      const star = document.createElement('label'); star.style.cssText='display:flex;align-items:center;gap:4px;font-size:13px;color:var(--sub);white-space:nowrap';
-      const cb = document.createElement('input'); cb.type='checkbox'; cb.checked=!!it.star;
-      cb.addEventListener('change',()=>{ it.star=cb.checked; });
-      star.appendChild(cb); star.appendChild(document.createTextNode('강조'));
-      row.appendChild(l); row.appendChild(star);
-      row.appendChild(upBtn(p.kpi,i)); row.appendChild(delBtn(p.kpi,i,'지표'));
-      panel.appendChild(row);
-    });
-    panel.appendChild(addBtn('지표 추가', ()=>p.kpi.push({label:'',star:false})));
-    box.appendChild(panel);
-}
-function planViewInto(box, p){
-  if (!p) return;
-  box.appendChild(planSecHead());
-
-  const def = el('div','', p.oneline);
-  def.style.cssText='border-left:3px solid var(--mint);background:var(--mint-bg);padding:13px 16px;border-radius:0 8px 8px 0;margin-bottom:18px;color:var(--ink);font-size:15px;line-height:1.6';
-  box.appendChild(def);
-
-  let panel = el('div','panel');
-  panel.appendChild(el('div','panel-title','왜 하는가'));
-  p.why.forEach((it,i)=>{
-    const row = el('div'); row.style.cssText='display:flex;gap:11px;margin-bottom:8px';
-    const n = el('span','', String(i+1)); n.style.cssText='flex:0 0 16px;color:var(--mint-ink);font-weight:800';
-    const tx = el('span');
-    const b = el('b','', it.t); b.style.color='var(--ink)';
-    tx.appendChild(b); tx.appendChild(document.createTextNode(' — ' + it.d));
-    row.appendChild(n); row.appendChild(tx);
-    panel.appendChild(row);
-  });
-  box.appendChild(panel);
-
-  panel = el('div','panel');
-  panel.appendChild(el('div','panel-title','타겟 — 3유형'));
-  p.targets.forEach(it=>{
-    const row = el('div'); row.style.marginBottom='7px';
-    const b = el('b','', it.who); b.style.color='var(--ink)';
-    const g = el('span','', ' → ' + it.gain); g.style.color='var(--sub)';
-    row.appendChild(b); row.appendChild(g);
-    panel.appendChild(row);
-  });
-  box.appendChild(panel);
-
-  panel = el('div','panel');
-  panel.appendChild(el('div','panel-title','왜 우리 얘기를 들어야 하나'));
-  p.edge.forEach(t=>{
-    const row = el('div','', '· ' + t); row.style.marginBottom='6px';
-    panel.appendChild(row);
-  });
-  box.appendChild(panel);
-
-  panel = el('div','panel');
-  panel.appendChild(el('div','panel-title','핵심 컨셉'));
-  panel.appendChild(el('div','', p.concept));
-  box.appendChild(panel);
-
-  panel = el('div','panel');
-  panel.appendChild(el('div','panel-title','기대효과 / 성공 지표'));
-  const chips = el('div'); chips.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
-  p.kpi.forEach(it=>{
-    const c = el('span','', (it.star?'★ ':'') + it.label);
-    if (it.star) c.style.cssText='background:var(--mint-bg);border:1px solid var(--mint);border-radius:2px;padding:5px 11px;font-size:13px;color:var(--mint-ink);font-weight:700';
-    else c.style.cssText='background:var(--surface);border:1px solid var(--line);border-radius:2px;padding:5px 11px;font-size:13px';
-    chips.appendChild(c);
-  });
-  panel.appendChild(chips);
-  box.appendChild(panel);
 }
 
 const RENDERERS = {
